@@ -3,7 +3,7 @@ import threading
 import random
 from queue import Queue
 
-MAX_QUEUE_SIZE = 20
+MAX_QUEUE_SIZE = 60
 RECV_PACKET_SIZE = 19
 
 class laptop_comms():

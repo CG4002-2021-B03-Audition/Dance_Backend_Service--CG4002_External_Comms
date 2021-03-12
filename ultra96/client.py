@@ -6,6 +6,7 @@ from datetime import datetime
 from collections import deque
 import numpy as np
 import struct
+import json
 
 from laptop_comms import laptop_comms
 from ext_comms import ext_comms
@@ -15,6 +16,7 @@ SECONDS_TO_MICROS = 1000000
 MILLIS_TO_MICROS = 1000
 
 MAX_READINGS_BEFORE_OUTPUT = 20
+DATAPOINTS_PER_DANCER = 30
 
 
 def calc_sync_delay(timestamps):
@@ -25,19 +27,25 @@ def calc_sync_delay(timestamps):
     return max_timestamp - min_timestamp
 
 
-def get_data_arr(data_bytes):
-    res = struct.unpack('<I c 6h H', data_bytes)
+def get_data_arr(data_bytes): 
+    try:
+        # I: uint16
+        # c: char/uint8
+        # h: sint16
+        # H: uint16
+        res = struct.unpack('<I c 6h H', data_bytes)
+        print(res)
+    except:
+        print("Corrupted data")
     return res
 
 
 if __name__ == "__main__":
-    #ext_conn = ext_comms()
+    ext_conn = ext_comms()
     laptop_conn = laptop_comms()
 
     data_store = [deque(), deque(), deque()]
     readings = []
-
-    index = 0
 
     # Main loop
     while True:
@@ -66,10 +74,31 @@ if __name__ == "__main__":
             if not laptop_conn.msg_queues[i].empty():
                 data_store[i].append(get_data_arr(laptop_conn.msg_queues[i].get()))
 
-            if len(data_store[i]) == 30: # TODO Magic number
-                # Call FPGA function here
-                index += 1
+            if len(data_store[i]) == DATAPOINTS_PER_DANCER:
+                data_chunk = np.array(data_store[i], dtype=object)
+                #print(data_chunk)
+                imu_data = data_chunk[:,2:8]
 
+
+                dict_col = []
+                for index in range(0, int(DATAPOINTS_PER_DANCER/2)):
+                    temp_dict = {}
+                    temp_dict["timestamp"] = data_store[i][index][0]
+                    temp_dict["accelX"] = data_store[i][index][2]
+                    temp_dict["accelY"] = data_store[i][index][3]
+                    temp_dict["accelZ"] = data_store[i][index][4]
+                    temp_dict["gyroYaw"] = data_store[i][index][5]
+                    temp_dict["gyroPitch"] = data_store[i][index][6]
+                    temp_dict["gyroRoll"] = data_store[i][index][7]
+                    temp_dict["dancerId"] = i
+                    dict_col.append(temp_dict)
+                json_col = json.dumps(dict_col)
+                # Send to dashboard
+                print("sent")
+                #ext_conn.send_to_dashb(json_col, "imu_data")
+                
+                
+                # Call FPGA function here
                 val = "test"
                 readings.append(val)
 

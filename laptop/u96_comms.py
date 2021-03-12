@@ -32,11 +32,26 @@ class u96_comms():
 """
 
 if __name__ == "__main__":
-    data = bytes(19)
+    data = bytearray()
+    
+    # 4 bytes of timestamp data
+    for j in range(0, 4):
+        data.append(24)
+    # 1 byte of true/false
+    data.append(ord("T"))
+    # 12 bytes of data
+    for j in range(0, 12):
+        data.append(69)
+    # CRC
+    x = 8208
+    # In little endian
+    little = x.to_bytes(2, "little")
+    data.extend(little)
+
     u96_conn = u96_comms("127.0.0.1", 3000)
     while True:
         input()
-        #time.sleep(0.01)
-        for i in range(20):
+        for i in range(30):
+            time.sleep(0.03) # Simulate 30Hz sending from laptop
             u96_conn.send_data(data)
         

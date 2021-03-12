@@ -1,5 +1,4 @@
-"""
-mport pika
+import pika
 
 
 move_msg = {
@@ -48,14 +47,3 @@ while True:
     index += 1
     print("Message sent")
     time.sleep(2)
-
-"""
-
-import time
-
-cur_time = time.time()
-print(cur_time)
-
-time.sleep(60)
-
-print(time.time())

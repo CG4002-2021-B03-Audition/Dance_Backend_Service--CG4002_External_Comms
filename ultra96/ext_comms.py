@@ -11,17 +11,16 @@ RABBIT_MQ_URL = "amqps://oojdxuzo:p30AjrBcvzi-HHaw0j0F51TsSZsg672x@gerbil.rmq.cl
 class ext_comms():
     def __init__(self, secret_key_string="PLSPLSPLSPLSWORK"):        
         print("Starting connection to evaluation server...")
-        self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.eval_conn.connect((EVAL_SERVER_IP, EVAL_SERVER_PORT))
+        #self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.eval_conn.connect((EVAL_SERVER_IP, EVAL_SERVER_PORT))
         print("Connection to evaluation server successful!")
-
+        
+        print("Starting connection to dashboard...")
         self.dashb_conn = pika.BlockingConnection(pika.URLParameters(RABBIT_MQ_URL))
         self.dashb_channel = self.dashb_conn.channel()
-        
-        # print("Starting connection to dashboard...")
-        # self.dashb_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.dashb_conn.connect((DASHBOARD_IP, DASHBOARD_PORT))
-        # print("Connection to dashboard successful!")
+        #self.dashb_channel.queue_declare(queue="imu_data")
+        #self.dashb_channel.queue_bind(exchange="events", queue="imu_data", routing_key="imu_data")
+        print("Connection to dashboard successful!")
 
         self.secret_key_string = secret_key_string
 
@@ -52,12 +51,6 @@ class ext_comms():
         message = self.encrypt_answers(pos, action, sync_delay)
         self.eval_conn.send(message)
 
-    def send_to_dashb(self):
-        #self.dashb_conn.send(something)
-        pass
 
-
-    def send_to_ext(self, pos, action, sync_delay): # More params can be put in here
-        print(f"Positions: {pos} | Action: {action} | Delay: {sync_delay}")
-        self.send_to_eval(pos, action, sync_delay)
-        self.send_to_dashb()
+    def send_to_dashb(self, json_object, routing_key):
+        self.dashb_channel.basic_publish(exchange="events", routing_key=routing_key, body=json_object)
