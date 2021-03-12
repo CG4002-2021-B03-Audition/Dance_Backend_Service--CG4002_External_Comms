@@ -44,9 +44,8 @@ class laptop_comms():
     def laptop_recv_thread(self, laptop_conn, laptop_idx, laptop_queue):
         while True:
             recv_msg = laptop_conn.recv(1024) # TODO change to proper packet recv size
-            msg_buf = list(recv_msg)
-
-            if len(msg_buf) == 0:
+            print(recv_msg)
+            if recv_msg == b'':
                 # Connection to laptop closed
                 break
             else:
@@ -54,7 +53,7 @@ class laptop_comms():
                 # Put message in queue if it is not full
                 if laptop_queue.full():
                     raise Exception("Recieve thread buffer full")
-                laptop_queue.put(msg_buf)
+                laptop_queue.put(recv_msg)
 
         print("Connection from laptop @ " + str(laptop_conn.getpeername()) + " dropped")
         #laptop_queue = Queue(MAX_QUEUE_SIZE) # Reset queue (actually should we do this?) TODO

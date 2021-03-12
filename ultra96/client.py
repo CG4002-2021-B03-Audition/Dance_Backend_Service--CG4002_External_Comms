@@ -35,8 +35,8 @@ if __name__ == "__main__":
     #ext_conn = ext_comms()
     laptop_conn = laptop_comms()
 
-    #data_store = [deque(), deque(), deque()]
-    #readings = []
+    data_store = [deque(), deque(), deque()]
+    readings = []
 
     # Main loop
     while True:
@@ -65,7 +65,6 @@ if __name__ == "__main__":
             if not laptop_conn.msg_queues[i].empty():
                 get_data_arr(laptop_conn.msg_queues[i].get())
 
-            """
             if len(data_store[i]) == 30: # TODO Magic number
                 # Call FPGA function here
                 val = "test"
@@ -79,7 +78,6 @@ if __name__ == "__main__":
                 # Logic for deciding dance move
                 readings = [] # Reset readings array
                 pass
-            """
 
         """
         # At least one packet received from each queue

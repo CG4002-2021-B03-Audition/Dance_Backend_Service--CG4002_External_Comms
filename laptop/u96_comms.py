@@ -29,8 +29,11 @@ class u96_comms():
                 tp = self.msg_queue.get()
                 self.u96_conn.send(bytes(tp[:8]))
 """
+
+if __name__ == "__main__":
+    u96_conn = u96_comms("127.0.0.1", 3000)
+    while True:
+        input()
+        data = bytes(19)
+        u96_conn.send_data(data)
         
-
-
-
-    
