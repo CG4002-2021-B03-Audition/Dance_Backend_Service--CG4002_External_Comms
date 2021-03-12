@@ -53,7 +53,7 @@ class laptop_comms():
                 #print(f"Data received from laptop idx {laptop_idx}, {laptop_conn.getpeername()}")
                 # Put message in queue if it is not full
                 if laptop_queue.full():
-                    pass # Handle queue overflow TODO
+                    raise Exception("Recieve thread buffer full")
                 laptop_queue.put(msg_buf)
 
         print("Connection from laptop @ " + str(laptop_conn.getpeername()) + " dropped")
