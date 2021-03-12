@@ -4,6 +4,7 @@ import random
 from queue import Queue
 
 MAX_QUEUE_SIZE = 20
+RECV_PACKET_SIZE = 19
 
 class laptop_comms():
     def __init__(self, listen_port=3000):
@@ -43,8 +44,7 @@ class laptop_comms():
 
     def laptop_recv_thread(self, laptop_conn, laptop_idx, laptop_queue):
         while True:
-            recv_msg = laptop_conn.recv(1024) # TODO change to proper packet recv size
-            print(recv_msg)
+            recv_msg = laptop_conn.recv(RECV_PACKET_SIZE) # TODO change to proper packet recv size
             if recv_msg == b'':
                 # Connection to laptop closed
                 break

@@ -27,7 +27,6 @@ def calc_sync_delay(timestamps):
 
 def get_data_arr(data_bytes):
     res = struct.unpack('<I c 6h H', data_bytes)
-    print(res)
     return res
 
 
@@ -37,6 +36,8 @@ if __name__ == "__main__":
 
     data_store = [deque(), deque(), deque()]
     readings = []
+
+    index = 0
 
     # Main loop
     while True:
@@ -63,10 +64,12 @@ if __name__ == "__main__":
 
         for i in range(0, 3):
             if not laptop_conn.msg_queues[i].empty():
-                get_data_arr(laptop_conn.msg_queues[i].get())
+                data_store[i].append(get_data_arr(laptop_conn.msg_queues[i].get()))
 
             if len(data_store[i]) == 30: # TODO Magic number
                 # Call FPGA function here
+                index += 1
+
                 val = "test"
                 readings.append(val)
 
@@ -76,6 +79,7 @@ if __name__ == "__main__":
 
             if len(readings) == MAX_READINGS_BEFORE_OUTPUT:
                 # Logic for deciding dance move
+                print("Decide move now")
                 readings = [] # Reset readings array
                 pass
 
