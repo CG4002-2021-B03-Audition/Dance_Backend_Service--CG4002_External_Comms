@@ -32,7 +32,7 @@ def get_data_arr(data_bytes):
 
 
 if __name__ == "__main__":
-    ext_conn = ext_comms()
+    #ext_conn = ext_comms()
     laptop_conn = laptop_comms()
 
     #data_store = [deque(), deque(), deque()]
