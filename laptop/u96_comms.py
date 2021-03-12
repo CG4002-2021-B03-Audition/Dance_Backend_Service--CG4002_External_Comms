@@ -35,8 +35,8 @@ if __name__ == "__main__":
     data = bytes(19)
     u96_conn = u96_comms("127.0.0.1", 3000)
     while True:
-        #input()
-        time.sleep(0.01)
-        #for i in range(20):
-        u96_conn.send_data(data)
+        input()
+        #time.sleep(0.01)
+        for i in range(20):
+            u96_conn.send_data(data)
         
