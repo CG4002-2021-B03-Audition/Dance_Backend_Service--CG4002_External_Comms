@@ -83,7 +83,7 @@ if __name__ == "__main__":
                 dict_col = []
                 for index in range(0, int(DATAPOINTS_PER_DANCER/2)):
                     temp_dict = {}
-                    temp_dict["timestamp"] = data_store[i][index][0]
+                    temp_dict["timestamp"] = str(data_store[i][index][0])
                     temp_dict["accelX"] = data_store[i][index][2]
                     temp_dict["accelY"] = data_store[i][index][3]
                     temp_dict["accelZ"] = data_store[i][index][4]
@@ -95,7 +95,7 @@ if __name__ == "__main__":
                 json_col = json.dumps(dict_col)
                 # Send to dashboard
                 print("sent")
-                #ext_conn.send_to_dashb(json_col, "imu_data")
+                ext_conn.send_to_dashb(json_col, "imu_data")
                 
                 
                 # Call FPGA function here

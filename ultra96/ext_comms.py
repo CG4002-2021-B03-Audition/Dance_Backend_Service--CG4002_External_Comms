@@ -18,8 +18,8 @@ class ext_comms():
         print("Starting connection to dashboard...")
         self.dashb_conn = pika.BlockingConnection(pika.URLParameters(RABBIT_MQ_URL))
         self.dashb_channel = self.dashb_conn.channel()
-        #self.dashb_channel.queue_declare(queue="imu_data")
-        #self.dashb_channel.queue_bind(exchange="events", queue="imu_data", routing_key="imu_data")
+        self.dashb_channel.queue_declare(queue="imu_data", durable=True)
+        self.dashb_channel.queue_bind(exchange="events", queue="imu_data", routing_key="imu_data")
         print("Connection to dashboard successful!")
 
         self.secret_key_string = secret_key_string
