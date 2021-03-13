@@ -7,19 +7,16 @@ from collections import deque
 import numpy as np
 import struct
 import json
-import features
-import pandas as pd
 
 from laptop_comms import laptop_comms
 from ext_comms import ext_comms
-from ai import ai_inference
+from ai import ai
 
 SECONDS_TO_MICROS = 1000000
 MILLIS_TO_MICROS = 1000
 
 MAX_READINGS_BEFORE_OUTPUT = 1#20
 DATAPOINTS_PER_DANCER = 30
-
 
 move_msg = {
   "type":      "move",
@@ -29,31 +26,6 @@ move_msg = {
   "accuracy":  "0.78",
   "timestamp": ""
 }
-
-fns = [f for f in features.__dict__ if callable(getattr(features, f)) and f.startswith("get_")]
-
-def preprocess_segment(segment, fns):
-
-    def derivative_of(data):
-        return pd.DataFrame(np.gradient(data, axis=1))
-
-    row = np.empty(0)
-    acc = segment.iloc[:, 0:3]
-    gyro = segment.iloc[:, 3:6]
-    for data in [acc,
-                 gyro,
-                 derivative_of(acc),
-                 derivative_of(gyro),
-                 # derivative_of(derivative_of(acc)),
-                 # derivative_of(derivative_of(gyro))
-                 ]:
-        for fn in fns:
-            f = getattr(features, fn)
-            np.append(row, np.asarray(f(data)))
-            row = np.concatenate((row, np.asarray(f(data))), axis=None)
-
-    return row
-
 
 def calc_sync_delay(timestamps):
     #print(timestamps)
@@ -79,6 +51,7 @@ def parse_laptop_data(data_bytes):
 if __name__ == "__main__":
     ext_conn = ext_comms()
     laptop_conn = laptop_comms()
+    detector = ai()
 
     data_store = [deque(), deque(), deque()]
     readings = []
@@ -126,14 +99,13 @@ if __name__ == "__main__":
                 data_index += 1
                 ext_conn.send_to_dashb(json_col, "imu_data")
                 
+
                 imu_data = data_chunk[:,2:8]
-                print(imu_data)
-                print(preprocess_segment(pd.DataFrame(imu_data), fns))
-                segment = preprocess_segment(pd.DataFrame(imu_data), fns)
-                
-                # Call FPGA function here
-                val = "test"
-                readings.append(val)
+                result = np.array(ai.fpga_evaluate(imu_data))
+                print(result)
+
+
+                readings.append(result)
 
                 # Remove 15 of the data points from data_store[i]
                 for j in range(0, int(DATAPOINTS_PER_DANCER/2)):
