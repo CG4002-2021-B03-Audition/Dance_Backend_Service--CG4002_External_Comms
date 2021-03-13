@@ -19,7 +19,7 @@ class ai():
         bias_2 = np.load('weights_3dance/bias_2.npy')
         bias_3 = np.load('weights_3dance/bias_3.npy')
 
-        overlay = Overlay('3dance.bit')   # load bitstream inside FPGA
+        overlay = Overlay('dance3.bit')   # load bitstream inside FPGA
         self.dma = overlay.axi_dma_0    
 
         self.input_buffer0 = allocate(shape=(100,), dtype=np.float32)
@@ -30,8 +30,8 @@ class ai():
         ##weights
         for i in range(32):
             for k in range(100):
-                input_buffer0[k] = weight_0[k][i]
-            self.dma.sendchannel.transfer(input_buffer0)
+                self.input_buffer0[k] = weight_0[k][i]
+            self.dma.sendchannel.transfer(self.input_buffer0)
             self.dma.sendchannel.wait()
         for i in range(32):
             for k in range(32):
