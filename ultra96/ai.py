@@ -91,7 +91,6 @@ class ai():
 
 
     def fpga_evaluate(self, imu_data):
-        print(imu_data)
         segment = self.preprocess_segment(pd.DataFrame(imu_data))
         
         scaler_mean = [-9.79599139e+03, -7.85817580e+03, -2.06396179e+03,  4.39034055e+03,
@@ -145,14 +144,17 @@ class ai():
         7.63679642e-01, 1.83869198e+00, 1.95639488e+00, 1.59928619e+00,
         4.53949157e+03, 6.15557672e-01, 4.74216535e-01, 3.96184625e-01]
 
-        segment = (segment * scaler_mean) / scaler_scale
+        segment = (segment - scaler_mean) / scaler_scale
         test = segment
-
+        
         for j in range(100):
             self.input_buffer0[j] = test[j]
+            print(self.input_buffer0[j], end=", ")
+        print()
+
         self.dma.sendchannel.transfer(self.input_buffer0)
         self.dma.recvchannel.transfer(self.output_buffer0)
         self.dma.sendchannel.wait()
         self.dma.recvchannel.wait()
-
-        return self.output_buffer0
+        print(self.output_buffer0[0], self.output_buffer0[1], self.output_buffer0[2])
+        return [self.output_buffer0[0], self.output_buffer0[1], self.output_buffer0[2]]

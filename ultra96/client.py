@@ -27,7 +27,7 @@ move_msg = {
   "timestamp": ""
 }
 
-test_data = [[-1424, -7581, 2892, -1, -3, 0],
+test_data = [[[-1424, -7581, 2892, -1, -3, 0],
 [-1404, -7625, 2890, -1, -2, -1],
 [-1405, -7623, 2881, -1, -2, -1],
 [-1416, -7593, 2895, -1, -2, -1],
@@ -55,7 +55,8 @@ test_data = [[-1424, -7581, 2892, -1, -3, 0],
 [-915, -7744, 3176, 2, 4, -8],
 [-936, -7711, 3144, 2, 6, -9],
 [-1059, -7664, 3090, 1, 7, -9],
-[-1207, -7502, 3016, 0, 2, -8]]
+[-1207, -7502, 3016, 0, 2, -8]],
+[[5083, 2754, 18, -27, 58, -293], [2936, 2753, 311, -23, 64, -294], [-320, 2467, 568, -14, 38, -302], [-1420, 2375, 901, -10, 34, -316], [-1891, 1406, 1187, -1, 118, -330], [-6896, -3304, 406, 38, 105, -358], [-11262, -8591, 817, 85, -36, -347], [-14237, -8680, -2541, 108, -160, -152], [-12171, -2047, -2573, -26, -31, 58], [-11115, -820, 1276, -37, 100, 89], [-13945, -759, -923, -58, 90, 137], [-13542, -11, -1819, -71, 47, 156], [-11652, -42, -2604, -89, 73, 183], [-12068, 663, -2605, -102, 87, 194], [-13167, 1555, -2231, -107, 35, 216], [-11882, 2736, -1941, -112, -6, 236], [-10644, 2819, -1415, -107, -26, 253], [-8243, 2253, 134, -83, -71, 268], [-6193, 2087, 786, -67, -102, 273], [-2445, 1844, 1192, -37, -165, 272], [2013, 939, 1102, -7, -181, 255], [4793, 288, 979, 6, -173, 232], [8462, 303, 732, 14, -145, 187], [11332, 1415, 108, 7, -112, 126], [13074, 2238, -332, -1, -90, 62], [15047, 3055, -424, -23, -44, -37], [15019, 3280, -286, -37, -10, -104], [12716, 2552, -73, -52, 27, -178], [-11140, -14263, -2893, 75, -105, -440]]]
 
 def calc_sync_delay(timestamps):
     #print(timestamps)
@@ -63,7 +64,6 @@ def calc_sync_delay(timestamps):
     max_timestamp = max(timestamps)
     #print(f"Earliest: {min_timestamp/MILLIS_TO_MICROS}, Latest: {max_timestamp/MILLIS_TO_MICROS}")
     return max_timestamp - min_timestamp
-
 
 def parse_laptop_data(data_bytes): 
     res = None
@@ -132,7 +132,8 @@ if __name__ == "__main__":
 
                 imu_data = data_chunk[:,2:8]
                 #result = np.array(detector.fpga_evaluate(imu_data))
-                result = np.array(detector.fpga_evaluate(test_data))
+                result = detector.fpga_evaluate(test_data[0])
+                print(result)
                 fpga_res = np.argmax(result, axis=-1)
                 labels = np.array(['gun', 'hair', 'sidepump'])
                 decoded_predictions = labels[fpga_res]
@@ -148,6 +149,7 @@ if __name__ == "__main__":
             if len(readings) == MAX_READINGS_BEFORE_OUTPUT:
                 # Logic for deciding dance move
                 print("Decide move now")
+                move_msg["timestamp"] = str(time.time())
                 ext_conn.send_to_dashb(json.dumps(move_msg), "action")
                 #ext_conn.send_to_eval((1, 2, 3), "gun", 1.27)
                 #ext_conn.recv_pos() # Receive positions
