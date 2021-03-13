@@ -145,7 +145,7 @@ class ai():
         7.63679642e-01, 1.83869198e+00, 1.95639488e+00, 1.59928619e+00,
         4.53949157e+03, 6.15557672e-01, 4.74216535e-01, 3.96184625e-01]
 
-        segment = (segment * scaler_mean) / scaler_scale
+        segment = (segment - scaler_mean) / scaler_scale
         test = segment
 
         for j in range(100):

@@ -88,22 +88,25 @@ if __name__ == "__main__":
 
     data_index = 0
     is_move_started = False # I'm receiving all 'F' inside the data
+    sync = ""
 
     while True: # Main loop
         for i in range(0, len(data_store)): # Iterate through queues associated with all 3 laptop recv threads
-            if not laptop_conn.msg_queues[i].empty(): # Check if current queue has a message available
+            
+            # Check if current queue has a message available
+            if not laptop_conn.msg_queues[i].empty(): 
         
                 # If message is available, parse the message 
                 parsed_msg = parse_laptop_data(laptop_conn.msg_queues[i].get())  
                 
                 # Check if message start flag is False or True
-                # if parsed_msg[1] == b'T': 
-                #     # All 3 dancers need to be True before sync_delay calculation
-                #     pass
-                # elif parsed_msg[1] == b'F': 
-                #     pass
-                # else:
-                #     raise Exception("Unknown start flag value encountered!")
+                if parsed_msg[1] == b'T': 
+                    # All 3 dancers need to be True before sync_delay calculation
+                    pass
+                elif parsed_msg[1] == b'F': 
+                    pass
+                else:
+                    raise Exception("Unknown start flag value encountered!")
 
                 # and store in data_store[i] buffer
                 data_store[i].append(parsed_msg)
