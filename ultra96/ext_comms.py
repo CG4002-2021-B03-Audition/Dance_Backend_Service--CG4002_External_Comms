@@ -11,8 +11,8 @@ RABBIT_MQ_URL = "amqps://oojdxuzo:p30AjrBcvzi-HHaw0j0F51TsSZsg672x@gerbil.rmq.cl
 class ext_comms():
     def __init__(self, secret_key_string="PLSPLSPLSPLSWORK"):        
         print("Starting connection to evaluation server...")
-        #self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.eval_conn.connect((EVAL_SERVER_IP, EVAL_SERVER_PORT))
+        # self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.eval_conn.connect((EVAL_SERVER_IP, EVAL_SERVER_PORT))
         print("Connection to evaluation server successful!")
         
         print("Starting connection to dashboard...")
