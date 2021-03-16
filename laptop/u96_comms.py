@@ -2,6 +2,7 @@ import socket
 import threading
 from queue import Queue
 import time
+import random
 
 class u96_comms():
     def __init__(self, ip, port):
@@ -32,26 +33,34 @@ class u96_comms():
 """
 
 if __name__ == "__main__":
-    data = bytearray()
-    
-    # 4 bytes of timestamp data
-    for j in range(0, 4):
-        data.append(24)
-    # 1 byte of true/false
-    data.append(ord("T"))
-    # 12 bytes of data
-    for j in range(0, 12):
-        data.append(69)
-    # CRC
-    x = 8208
-    # In little endian
-    little = x.to_bytes(2, "little")
-    data.extend(little)
+    start_time = time.time()
 
     u96_conn = u96_comms("127.0.0.1", 3000)
     while True:
-        input()
-        for i in range(30):
-            time.sleep(0.03) # Simulate 30Hz sending from laptop
-            u96_conn.send_data(data)
+        data = bytearray()
+
+        # 4 bytes of timestamp data
+        cur_time = int(time.time() - start_time)
+        time_bytes = cur_time.to_bytes(4, "little")
+        data.extend(time_bytes)
+        
+        # 1 byte of true/false
+        data.append(ord("T"))
+        
+        # 12 bytes of data
+        for j in range(0, 6):
+            val = random.randint(-32768, 32767)
+            val_bytes = val.to_bytes(2, "little", signed=True)
+            data.extend(val_bytes)
+
+        # CRC
+        crc = 8208
+        # In little endian
+        crc_bytes = crc.to_bytes(2, "little")
+        data.extend(crc_bytes)
+
+        #input()
+        #for i in range(30):
+        time.sleep(0.025) # Simulate 30Hz sending from laptop
+        u96_conn.send_data(data)
         

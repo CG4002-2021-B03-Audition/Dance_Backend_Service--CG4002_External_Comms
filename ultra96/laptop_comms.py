@@ -1,12 +1,13 @@
 import socket
 import threading
 import random
+import struct
 from queue import Queue
 
 MAX_QUEUE_SIZE = 60
 RECV_PACKET_SIZE = 19
 
-class laptop_comms():
+class LaptopComms():
     def __init__(self, listen_port=3000):
         print("Starting server for laptops...")
         self.laptop_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,6 +42,17 @@ class laptop_comms():
         
         self.laptop_socket.close()
 
+    def parse_raw_msg(self, raw_msg): 
+        res = list(range(0,9))
+        try:
+            # I: uint16
+            # c: char/uint8
+            # h: sint16
+            # H: uint16
+            res = struct.unpack('<I c 6h H', raw_msg)
+        except Exception as e:
+            print(e)
+        return res
 
     def laptop_recv_thread(self, laptop_conn, laptop_idx, laptop_queue):
         while True:
@@ -52,8 +64,11 @@ class laptop_comms():
                 #print(f"Data received from laptop idx {laptop_idx}, {laptop_conn.getpeername()}")
                 # Put message in queue if it is not full
                 if laptop_queue.full():
-                    raise Exception("Recieve thread buffer full")
-                laptop_queue.put(recv_msg)
+                    print("Recieve thread buffer full, dropping old packets")
+                    while not laptop_queue.empty()
+                        x = laptop_queue.get()
+
+                laptop_queue.put(self.parse_raw_msg(recv_msg))
 
         print("Connection from laptop @ " + str(laptop_conn.getpeername()) + " dropped")
         #laptop_queue = Queue(MAX_QUEUE_SIZE) # Reset queue (actually should we do this?) TODO
