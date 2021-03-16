@@ -4,16 +4,27 @@ from ai import AI
 from data_store import DataStore
 from results import Results
 
+import sys
 import time
 
 NUM_DANCERS = 1
 
-ext_conn = ExtComms()
+eval_ip = ""
+eval_port = 0
+
+if len(sys.argv) == 3:
+    eval_ip = sys.argv[1]
+    eval_port = int(sys.argv[2])
+else:
+    raise Exception("Please enter port and IP address")
+
+
+ext_conn = ExtComms(eval_ip, eval_port)
 laptop_conn = LaptopComms()
 ai = AI()
 
 data_store = DataStore()
-results = Results(num_action_trials=9, num_dancers=NUM_DANCERS) # Can maybe try with 7
+results = Results(num_action_trials=7, num_dancers=NUM_DANCERS) # Can maybe try with 7
 
 def wait_for_dancers_start():
     global laptop_conn
