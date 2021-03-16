@@ -13,7 +13,7 @@ laptop_conn = LaptopComms()
 ai = AI()
 
 data_store = DataStore()
-results = Results(num_action_trials=5, num_dancers=NUM_DANCERS)
+results = Results(num_action_trials=9, num_dancers=NUM_DANCERS) # Can maybe try with 7
 
 def wait_for_dancers_start():
     global laptop_conn

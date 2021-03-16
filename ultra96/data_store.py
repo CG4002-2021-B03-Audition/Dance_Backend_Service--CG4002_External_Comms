@@ -2,7 +2,7 @@ from collections import deque
 import numpy as np
 import json
 
-SLIDING_WINDOW_SIZE = 30
+SLIDING_WINDOW_SIZE = 20
 
 class DataStore():
     def __init__(self, 
