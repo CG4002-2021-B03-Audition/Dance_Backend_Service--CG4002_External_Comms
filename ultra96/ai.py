@@ -106,7 +106,7 @@ class AI():
         
         segment = self.preprocess_segment(pd.DataFrame(imu_data))
         segment = (segment - self.scaler_mean) / self.scaler_scale
-        
+
         for j in range(100):
             input_buffer0[j] = segment[j]
 

@@ -65,7 +65,7 @@ class LaptopComms():
                 # Put message in queue if it is not full
                 if laptop_queue.full():
                     print("Recieve thread buffer full, dropping old packets")
-                    while not laptop_queue.empty()
+                    while not laptop_queue.empty():
                         x = laptop_queue.get()
 
                 laptop_queue.put(self.parse_raw_msg(recv_msg))

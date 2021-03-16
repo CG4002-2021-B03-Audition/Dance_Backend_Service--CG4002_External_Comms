@@ -12,6 +12,7 @@ class ExtComms():
     def __init__(self, secret_key_string="PLSPLSPLSPLSWORK"):        
         print("Starting connection to evaluation server...")
         self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.eval_conn.settimeout(0.5)
         self.eval_conn.connect((EVAL_SERVER_IP, EVAL_SERVER_PORT))
         print("Connection to evaluation server successful!")
         
@@ -26,8 +27,11 @@ class ExtComms():
 
 
     def recv_pos(self):
-        recv_msg = self.eval_conn.recv(1024)
-        print(recv_msg)
+        try:
+            recv_msg = self.eval_conn.recv(1024)
+            print(recv_msg)
+        except:
+            print("Eval server receive timed out")
 
 
     """

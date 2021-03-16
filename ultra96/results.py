@@ -77,8 +77,8 @@ class Results():
             "type":      "move",
             "dancerId":  "1",
             "move":      self.chosen_action,
-            "syncDelay": str(self.sync_delay),
-            "accuracy":  str(self.detection_accuracy),
+            "syncDelay": str(round(self.sync_delay, 2)),
+            "accuracy":  str(round(self.detection_accuracy, 2)),
             "timestamp": str(time.time())
         }
         return json.dumps(move_msg)

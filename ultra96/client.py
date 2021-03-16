@@ -4,6 +4,8 @@ from ai import AI
 from data_store import DataStore
 from results import Results
 
+import time
+
 NUM_DANCERS = 1
 
 ext_conn = ExtComms()
@@ -11,7 +13,7 @@ laptop_conn = LaptopComms()
 ai = AI()
 
 data_store = DataStore()
-results = Results(num_action_trials=50, num_dancers=NUM_DANCERS)
+results = Results(num_action_trials=5, num_dancers=NUM_DANCERS)
 
 def wait_for_dancers_start():
     global laptop_conn
@@ -28,9 +30,11 @@ def wait_for_dancers_start():
                 data_store.add_dancer_data(dancer_data, dancer_id)
 
                 if dancer_data[1] == b'T':
+                    #print("True detected")
                     if dancer_id not in start_timestamps:
                         start_timestamps[dancer_id] = dancer_data[0]
                 elif dancer_data[1] == b'F':
+                    #print("False detected")
                     pass # Do nothing
                 else:
                     raise Exception("Unknown start flag value encountered!")
@@ -59,6 +63,7 @@ def analyse_dancers():
     global results
     
     print("\n*****PERFORMING ANALYSIS OF DANCER DATA*****\n")
+    cur_time = time.time()
     while True:
         for dancer_id in range(0, 3):
             if not laptop_conn.msg_queues[dancer_id].empty():
@@ -76,6 +81,8 @@ def analyse_dancers():
                     data_store.advance_window(dancer_id)
 
                 if results.is_ready():
+                    print(f"Total time: {time.time() - cur_time} seconds")
+
                     print("Results ready to send")
                     results.calc_positions() # Calc positions TODO temp placement
                     results.calc_action_result() # Calc final action to send to eval server
