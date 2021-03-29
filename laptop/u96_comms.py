@@ -35,32 +35,56 @@ class u96_comms():
 if __name__ == "__main__":
     start_time = time.time()
 
-    u96_conn = u96_comms("127.0.0.1", 3000)
+    u96_conn = u96_comms("127.0.0.1", 3001)
+    index = 0
     while True:
         data = bytearray()
 
-        # 4 bytes of timestamp data
-        cur_time = int(time.time() - start_time)
-        time_bytes = cur_time.to_bytes(4, "little")
-        data.extend(time_bytes)
-        
-        # 1 byte of true/false
-        data.append(ord("T"))
-        
-        # 12 bytes of data
-        for j in range(0, 6):
-            val = random.randint(-32768, 32767)
-            val_bytes = val.to_bytes(2, "little", signed=True)
-            data.extend(val_bytes)
+        if index % 2:
+            # 4 bytes of timestamp data
+            cur_time = int(time.time() - start_time)
+            time_bytes = cur_time.to_bytes(4, "little")
+            data.extend(time_bytes)
+            
+            # 1 byte of true/false
+            data.append(ord("T"))
+            
+            # 12 bytes of data
+            for j in range(0, 6):
+                val = 20000#random.randint(-32768, 32767)
+                val_bytes = val.to_bytes(2, "little", signed=True)
+                data.extend(val_bytes)
 
-        # CRC
-        crc = 8208
-        # In little endian
-        crc_bytes = crc.to_bytes(2, "little")
-        data.extend(crc_bytes)
+            # CRC
+            crc = 8208
+            # In little endian
+            crc_bytes = crc.to_bytes(2, "little")
+            data.extend(crc_bytes)
+
+        else:
+            # 4 bytes of timestamp data
+            #cur_time = int(time.time() - start_time)
+            #time_bytes = cur_time.to_bytes(4, "little")
+            #data.extend(time_bytes)
+            
+            # 1 byte of true/false
+            data.append(ord("T"))
+            
+            # 12 bytes of data
+            for j in range(0, 6):
+                val = 20000#random.randint(-32768, 32767)
+                val_bytes = val.to_bytes(2, "little", signed=True)
+                data.extend(val_bytes)
+
+            # CRC
+            crc = 8208
+            # In little endian
+            crc_bytes = crc.to_bytes(2, "little")
+            data.extend(crc_bytes)
 
         #input()
         #for i in range(30):
         time.sleep(0.025) # Simulate 30Hz sending from laptop
         u96_conn.send_data(data)
+        index += 1
         

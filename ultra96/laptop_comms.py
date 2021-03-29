@@ -3,12 +3,13 @@ import threading
 import random
 import struct
 from queue import Queue
+import zmq
 
 MAX_QUEUE_SIZE = 60
 RECV_PACKET_SIZE = 19
 
 class LaptopComms():
-    def __init__(self, listen_port=3000):
+    def __init__(self, listen_port=3002):
         print("Starting server for laptops...")
         self.laptop_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.laptop_socket.bind(("", listen_port))
@@ -43,13 +44,25 @@ class LaptopComms():
         self.laptop_socket.close()
 
     def parse_raw_msg(self, raw_msg): 
-        res = list(range(0,9))
+        res = None
         try:
-            # I: uint16
+            # I: uint32
             # c: char/uint8
             # h: sint16
             # H: uint16
-            res = struct.unpack('<I c 6h H', raw_msg)
+            print(raw_msg)
+            if len(raw_msg) == 19: # Action packet
+                res = list(struct.unpack('<I c 6h H', raw_msg))
+                res.append(0)
+            elif len(raw_msg) == 15: # Movement packet
+                res = list(struct.unpack('<B 6h H', raw_msg))
+                res.append(1)
+            elif len(raw_msg) == 6: # EMG packet
+                res = list(struct.unpack('<i H', raw_msg))
+                res.append(2)
+            else:
+                raise Exception(f"Unknown packet length {len(raw_msg)}")
+            
         except Exception as e:
             print(e)
         return res
@@ -63,6 +76,7 @@ class LaptopComms():
             else:
                 #print(f"Data received from laptop idx {laptop_idx}, {laptop_conn.getpeername()}")
                 # Put message in queue if it is not full
+
                 if laptop_queue.full():
                     print("Recieve thread buffer full, dropping old packets")
                     while not laptop_queue.empty():

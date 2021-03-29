@@ -9,9 +9,9 @@ RABBIT_MQ_URL = "amqps://oojdxuzo:p30AjrBcvzi-HHaw0j0F51TsSZsg672x@gerbil.rmq.cl
 class ExtComms():
     def __init__(self, eval_ip, eval_port, secret_key_string="PLSPLSPLSPLSWORK", ):        
         print("Starting connection to evaluation server...")
-        self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.eval_conn.settimeout(0.5)
-        self.eval_conn.connect((eval_ip, eval_port))
+        #self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.eval_conn.settimeout(0.5)
+        #self.eval_conn.connect((eval_ip, eval_port))
         print("Connection to evaluation server successful!")
         
         print("Starting connection to dashboard...")
@@ -27,9 +27,10 @@ class ExtComms():
     def recv_pos(self):
         try:
             recv_msg = self.eval_conn.recv(1024)
-            print(recv_msg)
+            print(f"Correct positions: {recv_msg}")
         except:
             print("Eval server receive timed out")
+        return recv_msg
 
 
     """

@@ -12,10 +12,11 @@ class Results():
         self.num_action_trials = num_action_trials
         self.num_dancers = num_dancers
 
-        self.start_timestamps = {}
+        self.is_movement_calc = False
         self.action_results = {}
 
-        self.positions = [0,0,0]
+        self.positions = [0,0,0] # Stores current positions
+
         self.chosen_action = ""
         self.sync_delay = 0
 
@@ -23,8 +24,44 @@ class Results():
         self.detection_accuracy = 0
 
 
-    def calc_positions(self):
-        self.positions = [1,2,3]
+    def calc_positions(self, movement_dirs):
+        possible_new_pos = {"dancer1" : [1,2,3], "dancer2" : [1,2,3], "dancer3" : [1,2,3]}
+        current_pos = {"dancer1": self.positions[0], "dancer2": self.positions[1], "dancer3": self.positions[2]}
+
+        dancer_movement["dancer1"] = movement_dirs[0]
+        dancer_movement["dancer2"] = movement_dirs[1]
+        dancer_movement["dancer3"] = movement_dirs[2]
+
+        for dancer, movement in dancer_movement.items():
+            if movement == 0:
+                #*no movement
+                for new_dancer in possible_new_pos:
+                    if new_dancer == dancer:
+                        temp_list = possible_new_pos[new_dancer].copy()
+                        for possible_pos in temp_list:
+                            if possible_pos != current_pos[new_dancer]:
+                                possible_new_pos[new_dancer].remove(possible_pos)
+                    else:
+                        if current_pos[dancer] in possible_new_pos[new_dancer]:
+                            possible_new_pos[new_dancer].remove(current_pos[dancer])
+
+            elif movement == 1:
+                #*moved left
+                temp_list = possible_new_pos[dancer].copy()
+                for possible_pos in temp_list:
+                    if possible_pos >= current_pos[dancer]:
+                        possible_new_pos[dancer].remove(possible_pos)
+            elif movement == 2:
+                #*moved right
+                temp_list = possible_new_pos[dancer].copy()
+                for possible_pos in temp_list:
+                    if possible_pos <= current_pos[dancer]:
+                        possible_new_pos[dancer].remove(possible_pos)
+
+        self.positions[0] = possible_new_pos["dancer1"]
+        self.positions[1] = possible_new_pos["dancer2"]
+        self.positions[2] = possible_new_pos["dancer3"]
+        print(f"Calc positions: {self.positions} {possible_new_pos}")
 
     def calc_sync_delay(self, start_timestamps):
         print("Calculating sync delay")
@@ -64,9 +101,10 @@ class Results():
         self.chosen_action = random.choice(most_common_actions)
         print(f"Chosen action: {self.chosen_action}")
 
-
     def is_ready(self):
         return self.detections == self.num_action_trials
+        #and self.detections[1] == self.num_action_trials \
+        #and self.detections[2] == self.num_action_trials
 
     def get_results(self):
         return tuple(self.positions), self.chosen_action, self.sync_delay
@@ -85,10 +123,9 @@ class Results():
 
     def reset(self):
         print("--------------------------\n")
-        self.start_timestamps = {}
+        self.is_movement_calc = False
         self.action_results = {}
 
-        self.positions = [0,0,0]
         self.chosen_action = ""
         self.sync_delay = 0
 
