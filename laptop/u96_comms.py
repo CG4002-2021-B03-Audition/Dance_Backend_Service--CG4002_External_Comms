@@ -3,14 +3,19 @@ import threading
 from queue import Queue
 import time
 import random
+import zmq
 
 class u96_comms():
     def __init__(self, ip, port):
         print("Starting connection to u96...")
-        self.u96_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = zmq.Context()
+        self.u96_conn = context.socket(zmq.PUB)
+        self.u96_conn.connect(f"tcp://{ip}:{port}")
+        #self.u96_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #self.u96_conn.settimeout(2) # Timeout to wait for response from u96
-        self.u96_conn.connect((ip, port))
-        
+        #self.u96_conn.connect((ip, port))
+        print("Connection to u96 successful!")
+
         """
         self.msg_queue = Queue(20)
         u96_thread = threading.Thread(target=self.u96_send_thread, args=())
@@ -19,7 +24,7 @@ class u96_comms():
         """
 
     def send_data(self, data):
-        self.u96_conn.send(data)
+        self.u96_conn.send_pyobj(data)
         #if self.msg_queue.full():
         #    raise Exception("U96 sending queue full!!!")
         #self.msg_queue.put(tp)
@@ -72,7 +77,7 @@ if __name__ == "__main__":
             
             # 12 bytes of data
             for j in range(0, 6):
-                val = 20000#random.randint(-32768, 32767)
+                val = random.randint(-32768, 32767)
                 val_bytes = val.to_bytes(2, "little", signed=True)
                 data.extend(val_bytes)
 
