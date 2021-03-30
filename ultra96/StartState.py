@@ -47,7 +47,7 @@ class StartState(State):
         else:
             raise Exception("Unknown start flag value encountered!")
 
-        if len(self.start_timestamps) == 2:
+        if len(self.start_timestamps) == 3: # TODO CHANGE THIS SHIT
             print("All dancers started moving arm")
             return True
 

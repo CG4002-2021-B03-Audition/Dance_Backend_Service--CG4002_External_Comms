@@ -68,8 +68,8 @@ class DanceState(State):
                 
                 print(f"Detecting for dancer {dancer_id+1}... ", end="")
                 ai_data = State.data_store.get_ai_data(dancer_id)
-                #action = self.ai.fpga_evaluate(self.data_store.test_ai_data["sidepump"])
-                action = State.ai.fpga_evaluate(ai_data)
+                #action = self.ai.fpga_evaluate_dance(self.data_store.test_ai_data["sidepump"])
+                action = State.ai.fpga_evaluate_dance(ai_data)
                 print(f"{action} | ", end="")
                 State.results.add_action_result(action)
                 

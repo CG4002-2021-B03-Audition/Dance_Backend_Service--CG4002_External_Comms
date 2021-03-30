@@ -43,13 +43,13 @@ class LaptopComms():
             for i in range(0, len(self.arm_connect_times)):
                 if cur_time - self.arm_connect_times[i] > DISCONNECT_CHECK_INTERVAL:
                     if i in self.connected_arms:
-                        print(f"Arm {i} disconnected")
+                        print(f"Arm {i+1} disconnected")
                         self.connected_arms.remove(i)
 
             for i in range(0, len(self.waist_connect_times)):
                 if cur_time - self.waist_connect_times[i] > DISCONNECT_CHECK_INTERVAL:
                     if i in self.connected_waists:
-                        print(f"Waist {i} disconnected")
+                        print(f"Waist {i+1} disconnected")
                         self.connected_waists.remove(i)
 
 
@@ -71,13 +71,13 @@ class LaptopComms():
             cur_time = time.time()
             if packet_type == 0: # Arm/Action Packet
                 if laptop_id not in self.connected_arms:
-                    print(f"Arm {laptop_id} connected")
+                    print(f"Arm {laptop_id+1} connected")
                     self.connected_arms.add(laptop_id)
                 self.arm_connect_times[laptop_id] = cur_time
 
             elif packet_type == 1: # Waist/Movement Packet
                 if laptop_id not in self.connected_waists:
-                    print(f"Waist {laptop_id} connected")
+                    print(f"Waist {laptop_id+1} connected")
                     self.connected_waists.add(laptop_id)
                 self.waist_connect_times[laptop_id] = cur_time
 

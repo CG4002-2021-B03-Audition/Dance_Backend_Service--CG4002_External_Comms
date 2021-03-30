@@ -15,7 +15,7 @@ class Results():
         self.detections = 0
         self.detection_accuracy = 0
 
-        self.positions = [0,0,0] # Stores current positions
+        self.positions = [1,2,3] # Stores current positions
         self.chosen_action = ""
         self.sync_delay = 0
         
@@ -24,12 +24,14 @@ class Results():
         possible_new_pos = {"dancer1" : [1,2,3], "dancer2" : [1,2,3], "dancer3" : [1,2,3]}
         current_pos = {"dancer1": self.positions[0], "dancer2": self.positions[1], "dancer3": self.positions[2]}
 
+        dancer_movement = {}
         dancer_movement["dancer1"] = movement_dirs[0]
         dancer_movement["dancer2"] = movement_dirs[1]
         dancer_movement["dancer3"] = movement_dirs[2]
 
-        if len(connected_waists) < 2:
+        if len(connected_waists) < 3:
             # Don't change positions in this case
+            print(">= 3 dancers disconnected, sending same dancer positions as last measurement!")
             print(f"Calc positions: {self.positions} {possible_new_pos}")
             return
 
@@ -83,67 +85,67 @@ class Results():
         #     if len(possible_new_pos[dancer]) > 1:
         #         for new_dancer in possible_new_pos:
         #             if len(possible_new_pos)
-        num_disconnected_beetle = 0
-        for dancer in connection_status:
-            if connection_status[dancer] == False:
-                num_disconnected_beetle += 1
+        # num_disconnected_beetle = 0
+        # for dancer in connection_status:
+        #     if connection_status[dancer] == False:
+        #         num_disconnected_beetle += 1
 
-        if num_disconnected_beetle == 1:
-            #For one 1 disconnect
-            for dancer in connection_status:
-                if connection_status[dancer] is False:
-                    check_flag = True
-                    for new_dancer in current_pos:
-                        if current_pos[dancer] not in possible_new_pos[new_dancer]:
-                            check_flag = False
-                            break
-                    #case 1: current pos is in all 3 dancers possible new pos
-                    if check_flag == True:
-                        for new_dancer in possible_new_pos:
-                            if new_dancer == dancer:
-                                possible_new_pos[new_dancer].clear()
-                                possible_new_pos[new_dancer].append(current_pos[new_dancer])
-                            else:
-                                possible_new_pos[new_dancer].remove(current_pos[dancer])
-                    #case 2: current pos is in 2 of the dancers possible new pos including the disconnected dancer
-                    else:
-                        for new_dancer in possible_new_pos:
-                            if len(possible_new_pos[new_dancer]) > 1 and new_dancer != dancer:
-                                if dancer_movement[new_dancer] != 0:
-                                    #moved
-                                    print("inside")
-                                    if(current_pos[new_dancer] in possible_new_pos[new_dancer]):
-                                        possible_new_pos[new_dancer].remove(current_pos[new_dancer])
-                                        print("inside possible new pos new dancer: %d"%current_pos[new_dancer])
-                                    # if(current_pos[dancer] in possible_new_pos[dancer]):
-                                    #     possible_new_pos[dancer].remove(current_pos[dancer])
-                                    #     print("inside possible new pos dancer: %d"%current_pos[dancer])
-                                else:
-                                    #stationary
-                                    if(current_pos[dancer] in possible_new_pos[new_dancer]):
-                                        possible_new_pos[new_dancer].remove(current_pos[dancer])
-                                    if(current_pos[new_dancer] in possible_new_pos[dancer]):
-                                        possible_new_pos[dancer].remove(current_pos[new_dancer])
-                        # #check for the len of disconnect beetle
-                        if len(possible_new_pos[dancer]) > 1:
-                            for new_dancer in possible_new_pos:
-                                if new_dancer != dancer and possible_new_pos[new_dancer][0] in possible_new_pos[dancer]:
-                                    possible_new_pos[dancer].remove(possible_new_pos[new_dancer][0])
+        # if num_disconnected_beetle == 1:
+        #     #For one 1 disconnect
+        #     for dancer in connection_status:
+        #         if connection_status[dancer] is False:
+        #             check_flag = True
+        #             for new_dancer in current_pos:
+        #                 if current_pos[dancer] not in possible_new_pos[new_dancer]:
+        #                     check_flag = False
+        #                     break
+        #             #case 1: current pos is in all 3 dancers possible new pos
+        #             if check_flag == True:
+        #                 for new_dancer in possible_new_pos:
+        #                     if new_dancer == dancer:
+        #                         possible_new_pos[new_dancer].clear()
+        #                         possible_new_pos[new_dancer].append(current_pos[new_dancer])
+        #                     else:
+        #                         possible_new_pos[new_dancer].remove(current_pos[dancer])
+        #             #case 2: current pos is in 2 of the dancers possible new pos including the disconnected dancer
+        #             else:
+        #                 for new_dancer in possible_new_pos:
+        #                     if len(possible_new_pos[new_dancer]) > 1 and new_dancer != dancer:
+        #                         if dancer_movement[new_dancer] != 0:
+        #                             #moved
+        #                             print("inside")
+        #                             if(current_pos[new_dancer] in possible_new_pos[new_dancer]):
+        #                                 possible_new_pos[new_dancer].remove(current_pos[new_dancer])
+        #                                 print("inside possible new pos new dancer: %d"%current_pos[new_dancer])
+        #                             # if(current_pos[dancer] in possible_new_pos[dancer]):
+        #                             #     possible_new_pos[dancer].remove(current_pos[dancer])
+        #                             #     print("inside possible new pos dancer: %d"%current_pos[dancer])
+        #                         else:
+        #                             #stationary
+        #                             if(current_pos[dancer] in possible_new_pos[new_dancer]):
+        #                                 possible_new_pos[new_dancer].remove(current_pos[dancer])
+        #                             if(current_pos[new_dancer] in possible_new_pos[dancer]):
+        #                                 possible_new_pos[dancer].remove(current_pos[new_dancer])
+        #                 # #check for the len of disconnect beetle
+        #                 if len(possible_new_pos[dancer]) > 1:
+        #                     for new_dancer in possible_new_pos:
+        #                         if new_dancer != dancer and possible_new_pos[new_dancer][0] in possible_new_pos[dancer]:
+        #                             possible_new_pos[dancer].remove(possible_new_pos[new_dancer][0])
 
-                while True:
-                    checking_flag = False
-                    for x in possible_new_pos:
-                        if len(possible_new_pos[x]) == 1:
-                            for y in possible_new_pos:
-                                if possible_new_pos[x][0] in possible_new_pos[y] and y != x:
-                                    possible_new_pos[y].remove(possible_new_pos[x][0])
-                                    checking_flag = True
-                    if checking_flag == False:
-                        break
+        #         while True:
+        #             checking_flag = False
+        #             for x in possible_new_pos:
+        #                 if len(possible_new_pos[x]) == 1:
+        #                     for y in possible_new_pos:
+        #                         if possible_new_pos[x][0] in possible_new_pos[y] and y != x:
+        #                             possible_new_pos[y].remove(possible_new_pos[x][0])
+        #                             checking_flag = True
+        #             if checking_flag == False:
+        #                 break
 
-        self.positions[0] = possible_new_pos["dancer1"]
-        self.positions[1] = possible_new_pos["dancer2"]
-        self.positions[2] = possible_new_pos["dancer3"]
+        self.positions[0] = possible_new_pos["dancer1"][0]
+        self.positions[1] = possible_new_pos["dancer2"][0]
+        self.positions[2] = possible_new_pos["dancer3"][0]
         print(f"Calc positions: {self.positions} {possible_new_pos}")
 
     def calc_sync_delay(self, start_timestamps):

@@ -79,8 +79,6 @@ class ExtComms():
             "type": "emg",
             "value": emg_value
         }
-        # TODO Change queue for emg data
-        print("sent")
         self.send_to_dashb(json.dumps(temp_dict), "emg_data")
 
 

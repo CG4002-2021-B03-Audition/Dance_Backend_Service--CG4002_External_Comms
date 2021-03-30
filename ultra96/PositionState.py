@@ -116,7 +116,6 @@ class PositionState(State):
         # Start timer
         self.pos_change_timeout.start() # Will do nothing after being started the first time
 
-        print(f"CHECKING DANCER {dancer_id+1} POSITION CHANGE")
         if dancer_id not in self.movement_dirs:
             movement_dir = movement_data[-2]
             # Only edit self.movement_dirs if there has been a non 0 movement direction detected
