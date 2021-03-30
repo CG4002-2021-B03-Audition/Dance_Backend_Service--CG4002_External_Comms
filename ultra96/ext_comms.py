@@ -27,6 +27,9 @@ class ExtComms():
         self.dashb_channel.queue_declare(queue="imu_data", durable=True)
         self.dashb_channel.queue_bind(exchange="events", queue="imu_data", routing_key="imu_data")
 
+        self.dashb_channel.queue_declare(queue="emg_data", durable=True)
+        self.dashb_channel.queue_bind(exchange="events", queue="emg_data", routing_key="emg_data")
+
         self.dashb_channel.queue_declare(queue="flags", durable=True)
         self.dashb_channel.queue_bind(exchange="events", queue="flags", routing_key="flags")
         print("Connection to dashboard successful!")
@@ -77,18 +80,40 @@ class ExtComms():
             "value": emg_value
         }
         # TODO Change queue for emg data
-        self.send_to_dashb(json.dumps(temp_dict), "imu_data")
+        print("sent")
+        self.send_to_dashb(json.dumps(temp_dict), "emg_data")
 
-    def send_start_msg(self):
-        print("Telling dashboard to start")
+
+
+    def send_start_move_msg(self):
+        print("Telling dashboard to start move")
         temp_dict = {
-            "message": "start"
+            "message": "start_move"
         }
         self.send_to_dashb(json.dumps(temp_dict), "flags")
 
-    def send_stop_msg(self):
-        print("Telling dashboard to stop")
+    def send_stop_move_msg(self):
+        print("Telling dashboard to stop move")
         temp_dict = {
-            "message": "stop"
+            "message": "stop_move"
         }
         self.send_to_dashb(json.dumps(temp_dict), "flags")
+
+
+
+
+    def send_start_pos_msg(self):
+        print("Telling dashboard to start position")
+        temp_dict = {
+            "message": "start_pos"
+        }
+        self.send_to_dashb(json.dumps(temp_dict), "flags")
+
+    def send_stop_pos_msg(self):
+        print("Telling dashboard to stop position")
+        temp_dict = {
+            "message": "stop_pos"
+        }
+        self.send_to_dashb(json.dumps(temp_dict), "flags")
+
+    
