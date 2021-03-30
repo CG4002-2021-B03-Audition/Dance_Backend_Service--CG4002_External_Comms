@@ -102,6 +102,7 @@ class Server(threading.Thread):
                     msg = data.decode("utf-8")
                     # Decrypt received message
                     decrypted_message = self.decrypt_message(msg)
+                    print(f"Gotten: {decrypted_message}")
                     if decrypted_message['action'] == "logout":
                         self.logout = True
                         self.stop()
@@ -112,8 +113,9 @@ class Server(threading.Thread):
                         pass  # no action sent yet.
                     else:  # action is available so we log it
                         self.has_no_response = False
+                        print("Writing to logger...")
                         self.write_move_to_logger(decrypted_message['position'], decrypted_message['action'], decrypted_message['sync'])
-
+                        print("Written...")
                         print("{} :: {} :: {}".format(decrypted_message['position'],
                                                                   decrypted_message['action'], 
                                                                   decrypted_message['sync']))
