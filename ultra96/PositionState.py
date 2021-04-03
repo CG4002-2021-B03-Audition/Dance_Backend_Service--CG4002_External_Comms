@@ -2,8 +2,7 @@ from state import State
 from timeout import Timeout
 import threading
 
-POSITION_CHANGE_DURATION = 10 # In seconds
-RESET_DURATION = 5 # In seconds
+POSITION_CHANGE_DURATION = 5 # In seconds
 
 class PositionState(State):
     def __init__(self):
@@ -18,7 +17,6 @@ class PositionState(State):
         self.movement_dirs = {}
         self.pos_change_timeout = Timeout(POSITION_CHANGE_DURATION)
 
-        self.reset_timeout = Timeout(RESET_DURATION)
         self.start_timestamps = {}
         self.stop_timestamps = {}
 
@@ -26,7 +24,6 @@ class PositionState(State):
         self.cur_state = "wait_false_flag"
         self.movement_dirs = {}
         self.pos_change_timeout = Timeout(POSITION_CHANGE_DURATION)
-        self.reset_timeout = Timeout(RESET_DURATION)
         self.start_timestamps = {}
         self.stop_timestamps = {}
 
@@ -45,8 +42,6 @@ class PositionState(State):
             raise Exception("Invalid packet type!")
 
         if self.cur_state == "pause":
-            #self.reset_timeout.start()
-            #if self.reset_timeout.has_timed_out():
             self.reset()
             return True
         

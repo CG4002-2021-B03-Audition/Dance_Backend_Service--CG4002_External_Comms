@@ -16,7 +16,7 @@ class ExtComms():
         
         print("Starting connection to evaluation server...")
         self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.eval_conn.settimeout(1)
+        #self.eval_conn.settimeout(1)
         self.eval_conn.connect((self.eval_ip, self.eval_port))
         print("Connection to evaluation server successful!")
         
@@ -72,7 +72,7 @@ class ExtComms():
 
     def send_to_dashb(self, json_object, routing_key):
         self.dashb_channel.basic_publish(exchange="events", routing_key=routing_key, body=json_object)
-        pass
+
 
     def send_emg_data(self, emg_value):
         temp_dict = {

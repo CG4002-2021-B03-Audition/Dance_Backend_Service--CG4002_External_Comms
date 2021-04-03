@@ -2,8 +2,6 @@ from state import State
 from timeout import Timeout
 import threading
 
-POSITION_CHANGE_DURATION = 5 # In seconds
-
 class StartState(State):
     def __init__(self):
         self.start_timestamps = {}
