@@ -2,13 +2,13 @@ from collections import deque
 import numpy as np
 import json
 
-SLIDING_WINDOW_SIZE = 30
+WINDOW_SIZE = 30
 
-class DataStore():
+class SlidingWindow():
     def __init__(self, 
-            sliding_window_size=SLIDING_WINDOW_SIZE, 
-            step_size=int(SLIDING_WINDOW_SIZE/2)):
-        self.window_size = sliding_window_size
+            window_size=WINDOW_SIZE, 
+            step_size=int(WINDOW_SIZE/2)):
+        self.window_size = window_size
         self.step_size = step_size
         self.store = [deque(), deque(), deque()]
 
@@ -18,14 +18,15 @@ class DataStore():
             "hair": [[-1703, -415, -316, 8, -54, 181], [278, 410, -163, 1, -28, 161], [1328, 1144, 221, -6, -4, 147], [2124, 2467, 967, -16, 24, 129], [2164, 3468, 1464, -22, 24, 117], [2131, 4687, 2213, -23, -7, 100], [2560, 5434, 2755, -24, -35, 89], [3013, 5591, 3062, -23, -37, 82], [3349, 5343, 3201, -20, -32, 75], [3472, 4762, 2890, -20, -39, 71], [3556, 4412, 2720, -22, -44, 68], [3823, 3653, 2619, -18, -48, 66], [4151, 3112, 2561, -12, -45, 66], [5128, 2577, 2481, -1, -36, 61], [5785, 2229, 2621, 13, -18, 55], [5961, 2096, 2653, 23, -10, 48], [6459, 1874, 2502, 37, 12, 37], [6617, 1831, 2385, 44, 29, 28], [6393, 1663, 2105, 55, 31, 6], [6475, 1973, 1642, 64, 32, -20], [6453, 2354, 1161, 68, 39, -41], [6214, 2889, 200, 68, 45, -74], [6196, 3848, -371, 62, 56, -92], [5886, 4891, -500, 53, 76, -110], [4835, 5602, -1091, 47, 67, -134], [4366, 6654, -1597, 41, 66, -147], [3623, 7232, -1714, 28, 97, -166], [2591, 7086, -1745, 14, 114, -177], [637, 7114, -1757, -8, 139, -188]]
         }
 
-    def add_dancer_data(self, data, dancer_id):
+
+    def add_data(self, data, dancer_id):
         self.store[dancer_id].append(data)
 
-    def advance_window(self, dancer_id):
+    def advance(self, dancer_id):
         for i in range(0, self.step_size):
             self.store[dancer_id].popleft()
 
-    def is_window_full(self, dancer_id):
+    def is_full(self, dancer_id):
         return len(self.store[dancer_id]) == self.window_size
 
     def get_ai_data(self, dancer_id):

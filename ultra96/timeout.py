@@ -18,5 +18,11 @@ class Timeout():
             self.has_started = True
             self.has_ended = False
 
+    def stop(self):
+        if self.has_started == True:
+            self.internal_timer.cancel()
+            self.has_started = False
+            self.has_ended = False
+
     def has_timed_out(self):
         return self.has_ended
