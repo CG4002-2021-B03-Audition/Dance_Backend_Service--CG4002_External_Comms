@@ -10,7 +10,7 @@ class SlidingWindow():
             step_size=int(WINDOW_SIZE/2)):
         self.window_size = window_size
         self.step_size = step_size
-        self.store = [deque(), deque(), deque()]
+        self.store = deque()
 
         self.test_ai_data = {
             "gun": [[5083, 2754, 18, -27, 58, -293], [2936, 2753, 311, -23, 64, -294], [-320, 2467, 568, -14, 38, -302], [-1420, 2375, 901, -10, 34, -316], [-1891, 1406, 1187, -1, 118, -330], [-6896, -3304, 406, 38, 105, -358], [-11262, -8591, 817, 85, -36, -347], [-14237, -8680, -2541, 108, -160, -152], [-12171, -2047, -2573, -26, -31, 58], [-11115, -820, 1276, -37, 100, 89], [-13945, -759, -923, -58, 90, 137], [-13542, -11, -1819, -71, 47, 156], [-11652, -42, -2604, -89, 73, 183], [-12068, 663, -2605, -102, 87, 194], [-13167, 1555, -2231, -107, 35, 216], [-11882, 2736, -1941, -112, -6, 236], [-10644, 2819, -1415, -107, -26, 253], [-8243, 2253, 134, -83, -71, 268], [-6193, 2087, 786, -67, -102, 273], [-2445, 1844, 1192, -37, -165, 272], [2013, 939, 1102, -7, -181, 255], [4793, 288, 979, 6, -173, 232], [8462, 303, 732, 14, -145, 187], [11332, 1415, 108, 7, -112, 126], [13074, 2238, -332, -1, -90, 62], [15047, 3055, -424, -23, -44, -37], [15019, 3280, -286, -37, -10, -104], [12716, 2552, -73, -52, 27, -178], [-11140, -14263, -2893, 75, -105, -440]],
@@ -19,34 +19,37 @@ class SlidingWindow():
         }
 
 
-    def add_data(self, data, dancer_id):
-        self.store[dancer_id].append(data)
+    def add_data(self, data):
+        self.store.append(data)
 
-    def advance(self, dancer_id):
+    def advance(self):
         for i in range(0, self.step_size):
-            self.store[dancer_id].popleft()
+            self.store.popleft()
 
-    def is_full(self, dancer_id):
-        return len(self.store[dancer_id]) == self.window_size
+    def is_full(self):
+        return len(self.store) == self.window_size
 
-    def get_ai_data(self, dancer_id):
-        np_arr = np.array(self.store[dancer_id], dtype=object)
-        return np_arr[:,2:8]
+    def get_ai_data(self, is_dance):
+        np_arr = np.array(self.store, dtype=object)
+        if is_dance:
+            return np_arr[:,2:8]
+        else:
+            return np_arr[:,1:7]
 
     def get_dashb_data(self, dancer_id):
         data_arr = []
         for index in range(0, 1):#self.step_size):
             temp_dict = {}
-            temp_dict["timestamp"] = str(self.store[dancer_id][index][0])
-            temp_dict["accelX"] = self.store[dancer_id][index][2]
-            temp_dict["accelY"] = self.store[dancer_id][index][3]
-            temp_dict["accelZ"] = self.store[dancer_id][index][4]
-            temp_dict["gyroYaw"] = self.store[dancer_id][index][5]
-            temp_dict["gyroPitch"] = self.store[dancer_id][index][6]
-            temp_dict["gyroRoll"] = self.store[dancer_id][index][7]
+            temp_dict["timestamp"] = str(self.store[index][0])
+            temp_dict["accelX"] = self.store[index][2]
+            temp_dict["accelY"] = self.store[index][3]
+            temp_dict["accelZ"] = self.store[index][4]
+            temp_dict["gyroYaw"] = self.store[index][5]
+            temp_dict["gyroPitch"] = self.store[index][6]
+            temp_dict["gyroRoll"] = self.store[index][7]
             temp_dict["dancerId"] = dancer_id
             data_arr.append(temp_dict)
         return json.dumps(data_arr)
 
     def purge(self):
-        self.store = [deque(), deque(), deque()]
+        self.store = deque()

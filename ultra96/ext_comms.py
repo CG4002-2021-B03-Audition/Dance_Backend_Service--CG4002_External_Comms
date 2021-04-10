@@ -11,14 +11,14 @@ RABBIT_MQ_URL = "amqps://oojdxuzo:p30AjrBcvzi-HHaw0j0F51TsSZsg672x@gerbil.rmq.cl
 
 class ExtComms():
     def __init__(self, secret_key_string="PLSPLSPLSPLSWORK"):        
-        self.eval_ip = input("Enter evaluation server IP: ")
-        self.eval_port = int(input("Enter evaluation server port: "))
+        #self.eval_ip = input("Enter evaluation server IP: ")
+        #self.eval_port = int(input("Enter evaluation server port: "))
         
-        print("Starting connection to evaluation server...")
-        self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #print("Starting connection to evaluation server...")
+        #self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #self.eval_conn.settimeout(1)
-        self.eval_conn.connect((self.eval_ip, self.eval_port))
-        print("Connection to evaluation server successful!")
+        #self.eval_conn.connect((self.eval_ip, self.eval_port))
+        #print("Connection to evaluation server successful!")
         
         print("Starting connection to dashboard...")
         self.dashb_conn = pika.BlockingConnection(pika.URLParameters(RABBIT_MQ_URL))
@@ -71,7 +71,8 @@ class ExtComms():
 
 
     def send_to_dashb(self, json_object, routing_key):
-        self.dashb_channel.basic_publish(exchange="events", routing_key=routing_key, body=json_object)
+        print(json_object)
+        #self.dashb_channel.basic_publish(exchange="events", routing_key=routing_key, body=json_object)
 
 
     def send_emg_data(self, emg_value):

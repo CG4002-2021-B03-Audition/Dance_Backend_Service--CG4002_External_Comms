@@ -1,145 +1,211 @@
 from ai import AI
-from data_store import SlidingWindow
 from results import Results
-from ext_comms import ExtComms()
-from laptop_comms import LaptopComms
+from ext_comms import ExtComms
+from dancer import Dancer
+from sliding_window import SlidingWindow
 
+from queue import Queue
 import threading
 from timeout import Timeout
 import struct
-from queue import Queue
+import zmq
+import time
 
-DANCE_PACKET_CODE = 0
-MOVEMENT_PACKET_CODE = 0
-EMG_PACKET_CODE = 0
+MAX_QUEUE_SIZE = 60
 
 class Main():
-    def __init__(self):
-        print("Starting up...")
-
-
-        """
-
-
-        Is a result for all 3 dancers ready?
-        - This result can be either move results or dance results
-        - Each dancer just outputs a final detection result.
-        - Once I have the detection result, I can do what I want with it.
-
-        """
-
+    def __init__(self, listen_port=3001):
         self.ai = AI()
-        self.dance_window = SlidingWindow()
-        self.movement_window = SlidingWindow()
         self.results = Results(num_action_trials=20)
         self.ext_conn = ExtComms()
-        self.laptop_conn = LaptopComms() # Class handles connections from laptops
+        
+        self.dance_window = SlidingWindow(window_size=40)
+        self.movement_window = SlidingWindow(window_size=40)
 
-        self.connected_arms = 0
-        self.connected_waits = 0
-
-        self.dance_thread = threading.Thread(target=self.dance_thread_func)
-        self.dance_thread.daemon = True
-        self.dance_thread.start()
-
-        self.movement_thread = threading.Thread(target=self.movement_thread_func)
-        self.movement_thread.daemon = True
-        self.movement_thread.start()
-
-        self.emg_thread = threading.Thread(target=self.emg_thread_func)
-        self.emg_thread.daemon = True
-        self.emg_thread.start()
-
-        # Thread sync features
-        self.max_buffer_size = 3
-        self.waist_movement_buffer = [[],[],[]]
-        self.arm_movement_buffer = [[],[],[]]
-        self.movement_detection_timeout = Timeout(2)
+        #self.dancer1 = Dancer(1)
+        #self.dancer2 = Dancer(2)
+        #self.dancer3 = Dancer(3)
+        #self.dancers = [self.dancer1, self.dancer2, self.dancer3]
+        
+        self.dance_queue = Queue(MAX_QUEUE_SIZE)
+        self.movement_queue = Queue(MAX_QUEUE_SIZE)
 
 
-    def dance_thread_func(self):
-        if not self.laptop_conn.dance_data_queue.empty():
-            dance_data = self.laptop_conn.dance_data_queue.get()
-            dancer_id = dance_data[-1]
+        print("Starting server for laptops...")
+        context = zmq.Context()
+        self.laptop_socket = context.socket(zmq.SUB)
+        self.laptop_socket.bind(f"tcp://127.0.0.1:{listen_port}")
+        self.laptop_socket.setsockopt(zmq.SUBSCRIBE, b'')
+        print("Server for laptops started! Now waiting for laptops to connect")        
 
-            self.dance_window.add_data(dance_data[:-1], dancer_id) # Put dance_data in dance_window
-            if self.dance_window.is_full(dancer_id):
-                # Send IMU data to dashboard
-                dashb_imu_data = self.dance_window.get_dashb_data(dancer_id)
-                self.ext_conn.send_to_dashb(dashb_imu_data, "imu_data")
-                
-                # Perform AI detection on dance data
-                ai_data = self.dance_window.get_ai_data(dancer_id)
-                prediction = self.ai.fpga_evaluate_dance(ai_data)
-                print(f"Dancer {dancer_id} dance prediction: {prediction}")
+        self.emg_data_queue = Queue(MAX_QUEUE_SIZE)
 
-                # Changing behaviour based on prediction type
-                if prediction == "none": # Predicted dancer as stationary
-                    pass # Do nothing
+        recv_thread = threading.Thread(target=self.dance_thread)
+        recv_thread.daemon = True
+        recv_thread.start()
 
-                elif prediction == "left" or prediction == "right": # Predicted dancer performing a positon change
-                    if len(self.arm_movement_buffer[dancer_id]) != self.max_buffer_size:
-                        self.arm_movement_buffer[dancer_id].append(prediction)
+        """
+        CASES FOR EACH DANCER
+
+        Arm sending none: Dancer thread will output disconnected
+        Waist sending none: Dancer thread will output disconnected
+
+        Arm sending none: This is considered a position change
+        Waist disconnected: waist_movement_buffer is not full, but arm_movement_buffer will be full
+                            so this is considered a DISCONNECT path. We will do a majority voting
+                            for what is available in both buffers. The possible outputs here
+                            can be "none", "left", or "right". We will use this data for position detection.
+                            We will not be in dance mode because arm outputs a position. 
+                            If arm outputs a dance move, we will not come to this part of the movement thread.
+                            We will only come here if the dance outputs a position. So it is safe?
+
+        Arm disconnected: Dancer thread will output disconnected. 
+        Waist sending none: This can be either during a dance move, or during a position change. We can't
+                            know for sure which state we are in. Hmm
+                            In this case, we will take majority voting again.
+                            If we are in dance state, we do nothing.
+                            If we are in position state, we use this value.
+
+        ---
+
+        Arm sending move: This is considered a position change
+        Waist sending move: This is considered a position change. We will use both buffers to get a
+                            consensus of all moves. All moves in both arm and waist movement buffers
+                            need to be the same in this case. If this happens we are definitely
+                            in the position state. We use this output value in our movement detection system.
+
+        Arm sending move: This is definitely a dance move. So we don't care if there is a disconnection
+                          from the waist.
+        Waist disconnected: Waist thread will output disconnectd.
+
+        Arm disconnected:     This is the same as    Arm disconnected
+        Waist sending move:                          Waist sending none 
+
+        ---
+
+        Arm sending dance: As long as a dance is being sent, we don't care about what's going on
+                           with the movement thread.
+        Waist sending none: 
+        
+        Arm sending dance: As long as a dance is being sent, we don't care about movement thread.
+        Waist sending move:
+
+        Arm sending dance:
+        Waist disconnected:
+
+        """
+
+    def run(self):
+        cur_time = 0
+        first_packet = True
+        num_packets = 0
+        
+
+        while True:
+            recv_msg = self.laptop_socket.recv_pyobj()
+            parsed_msg, packet_type, dancer_id = self.parse_raw_msg(recv_msg)
+            #print(dancer_id)
+
+            if dancer_id == 1:
+                self.movement_queue.put(parsed_msg)
+                #self.dancer1.add_to_queue(parsed_msg, packet_type)
+            elif dancer_id == 2:
+                pass
+                #self.dancer2.add_to_queue(parsed_msg, packet_type)
+            elif dancer_id == 3:
+                if packet_type == 0:
+                    
+                    if first_packet == True:
+                        cur_time = time.time()
+                        first_packet = False
                     else:
-                        # If the arm_movement_buffer is full, we give control to the
-                        # movement_thread to proceed with detections.
-                        print("Arm movement buffer full")
-                        pass
+                        self.dance_queue.put(parsed_msg)
+                        if time.time() - cur_time >= 1:
+                            #print(f"Num packets: {num_packets}")
+                            num_packets = 0
+                            cur_time = time.time()
+                    num_packets += 1
 
-                else: # Prediction is an actual dance move
-                    self.results.add_dance_prediction(prediction)
-                    if self.results.is_dance_result_ready():
-                        self.calc_dance_result()
-                
-                self.dance_window.advance() # Move window forwards by dance_window.step_size
-
-
-    def movement_thread_func(self):
-        if not self.laptop_conn.movement_data_queue.empty():
-            movement_data = self.laptop_conn.movement_data_queue.get()
-            dancer_id = movement_data[-1]
-
-            self.movement_window.add_data(movement_data[:-1], dancer_id)
-            if self.movement_window.is_full(dancer_id):
-                # Perform AI detection on movement data
-                ai_data = self.movement_window.get_ai_data(dancer_id)
-                prediction = self.ai.fpga_evaluate_movement(ai_data)
-                print(f"Dancer {dancer_id} movement prediction: {prediction}")
-                
-                self.movement_detection_timeout.start()
-                if len(self.waist_movement_buffer[dancer_id]) != self.max_buffer_size:
-                    self.waist_movement_buffer[dancer_id].append(prediction)
+                elif packet_type == 1:
+                    self.movement_queue.put(parsed_msg)
                 else:
-                    # Need to wait for arm_position_buffer to be full also
-                    # It is possible here that arm_position_buffer will never be full
-                    # This can happen either due to a disconnect or if a dance prediction
-                    # is going on in the other thread
-                    # Need some sort of timeout here to ensure we proceed without arm_position_buffer
-                    # data
-                    if len(self.arm_movement_buffer[dancer_id]) == self.max_buffer_size:
-                        # Stop timer because we have faced no detections
-                        self.movement_detection_timeout.stop()
-                        
-                        consensus_set = set()
-                        consensus_set.update(self.waist_movement_buffer[dancer_id])
-                        consensus_set.update(self.arm_movement_buffer[dancer_id])
-                        
-                        # If all max_buffer_size predictions are the same
-                        if len(consensus_set) == self.max_buffer_size*2:
-                            # TODO We take movement prediction
-                        else: # If there is no consensus
-                            # TODO We output no movement detected
+                    raise Exception()
+                
+            elif dancer_id == 4: # Special dancer_id reserved for EMG data
+                pass
+                #self.ext_conn.send_emg_data(parsed_msg[0])
+            else:
+                raise Exception(f"Unknown dancer ID when adding to respective queue: {dancer_id}")
 
-                if self.movement_detection_timeout.has_timed_out():
-                    # TODO Perform majority voting for move
 
-    
-    def emg_thread_func(self):
-        if not self.laptop_conn.emg_data_queue.empty():
-            emg_data = self.laptop_conn.emg_data_queue.get()
-            assert len(emg_data) == 1 # Note that emg_data is an array of size 1
-            self.ext_conn.send_emg_data(emg_data[0])
+    def dance_thread(self):
+        while True:
+            if not self.dance_queue.empty():
+                dance_data = self.dance_queue.get()
+                self.dance_window.add_data(dance_data)
+
+                if self.dance_window.is_full():
+                    ai_data = self.dance_window.get_ai_data(True)
+                    time_now = time.time()
+                    prediction = self.ai.fpga_evaluate_dance(ai_data)
+                    print(f"Dance prediction: {prediction} | {time.time() - time_now}s")
+
+                    self.dance_window.advance()
+
+            if not self.movement_queue.empty():
+                movement_data = self.movement_queue.get()
+                self.movement_window.add_data(movement_data)
+
+                if self.movement_window.is_full():
+                    ai_data = self.movement_window.get_ai_data(False)
+                    #print(ai_data)
+                    time_now = time.time()
+                    prediction = self.ai.fpga_evaluate_pos(ai_data)
+                    #print(f"Movement prediction: {prediction} | {time.time() - time_now}s")
+
+                    self.movement_window.advance()
+
+    def parse_raw_msg(self, raw_msg): 
+        res = None
+        packet_type = None
+        dancer_id = None
+
+        try:
+            # I: uint32
+            # c: char/uint8
+            # h: sint16
+            # H: uint16
+            
+            if len(raw_msg) == 17: # Action packet
+                res = list(struct.unpack('<I B 6h', raw_msg))
+                start_flag = int(format(res[1], '02x')[0])
+                dancer_id = int(format(res[1], '02x')[1])
+                res.append(start_flag) # Appending start flag (Index -1)
+                #res.append(dancer_id) # Appending dancer ID (Index -1)
+                packet_type = 0
+
+            elif len(raw_msg) == 13: # Movement packet
+                res = list(struct.unpack('<B 6h', raw_msg))
+                #movement_dir = int(format(res[0], '02x')[0])
+                dancer_id = int(format(res[0], '02x')[1])
+                #res.append(dancer_id) # Appending dancer ID (Index -2)
+                #res.append(movement_dir) # Appending movement direction (Index -1)
+                packet_type = 1
+
+            elif len(raw_msg) == 6: # EMG packet
+                res = list(struct.unpack('<i H', raw_msg))
+                dancer_id = 4
+                #res.append(dancer_id) # Appending dancer
+                packet_type = 2
+
+            else:
+                raise Exception(f"Unknown packet length {len(raw_msg)}")
+
+        except Exception as e:
+            raise e
+        return res, packet_type, dancer_id
 
 
 if __name__ == "__main__":
     main = Main()
+    main.run()
