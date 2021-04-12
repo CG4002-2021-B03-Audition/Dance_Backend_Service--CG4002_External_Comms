@@ -1,17 +1,12 @@
 from ai import AI
-from results import Results
+from state import State
 from ext_comms import ExtComms
 from dancer import Dancer
-from sliding_window import SlidingWindow
 
-from queue import Queue
 import threading
-from timeout import Timeout
 import struct
 import zmq
 import time
-
-MAX_QUEUE_SIZE = 60
 
 class PacketType():
     DANCE_PACKET = 0
@@ -21,15 +16,11 @@ class PacketType():
 class Main():
     def __init__(self, listen_port=3001):
         self.ai = AI()
-        self.results = Results(num_action_trials=20)
+        self.state = State(num_action_trials=20)
         self.ext_conn = ExtComms()
         
-        self.dance_window = SlidingWindow(window_size=40)
-        self.movement_window = SlidingWindow(window_size=40)
-        
-        # Stores data received by zmq from laptop for each dancer
-        self.dance_data_queues = [Queue(MAX_QUEUE_SIZE), Queue(MAX_QUEUE_SIZE), Queue(MAX_QUEUE_SIZE)]
-        self.movement_data_queues = [Queue(MAX_QUEUE_SIZE), Queue(MAX_QUEUE_SIZE), Queue(MAX_QUEUE_SIZE)]
+        # Dancer IDs are indexed from 0 for all internal calculations
+        self.dancers = [Dancer(0), Dancer(1), Dancer(2)]
 
         print("Starting server for laptops...")
         context = zmq.Context()
@@ -84,27 +75,13 @@ class Main():
             parsed_msg, packet_type, dancer_id = self.parse_raw_msg(recv_msg)
 
             if packet_type == PacketType.DANCE_PACKET:
-                if self.dance_data_queues[dancer_id].full():
-                    print(f"Dance data queue {dancer_id+1} full, emptying...")
-                    while not self.dance_data_queues[dancer_id].empty():
-                        x = self.dance_data_queues[dancer_id].get()
-                self.dance_data_queues[dancer_id].put(parsed_msg)
+                self.dancers[dancer_id].add_to_dance_data_queue(parsed_msg)
 
             elif packet_type == PacketType.MOVEMENT_PACKET:
-                if self.movement_data_queues[dancer_id].full():
-                    print(f"Movement data queue {dancer_id+1} full, emptying...")
-                    while not self.movement_data_queues[dancer_id].empty():
-                        x = self.movement_data_queues[dancer_id].get()
-                self.movement_data_queues[dancer_id].put(parsed_msg)
+                self.dancers[dancer_id].add_to_movement_data_queue(parsed_msg)
 
             elif packet_type == PacketType.EMG_PACKET:
-                pass
-                # TODO JUST SEND DATA DIRECTLY FROM HERE
-                # if self.emg_data_queue.full():
-                #     print("EMG data queue full, emptying...")
-                #     while not self.emg_data_queue.empty():
-                #         x = self.emg_data_queue.get()
-                # self.emg_data_queue.put(parsed_msg)
+                self.ext_conn.send_emg_data(parsed_msg[0])
 
             else:
                 raise Exception(f"Unknown PacketType: {packet_type}")                
@@ -115,53 +92,119 @@ class Main():
         while True:
             # Iterate over all dancers
             for dancer_id in range(0, 3): 
+
+                movement_detection = None
+                dance_detection = None                
                 
-                # Check for dance data
-                if not self.dance_data_queues[dancer_id].empty():
-                    dance_data = self.dance_data_queues[dancer_id].get()
+                # Check for movement data
+                if not self.dancers[dancer_id].movement_data_queue.empty():
+                    movement_data = self.dancers[dancer_id].movement_data_queue.get()
 
                     # Add data to sliding window to prepare for detections
-                    self.dance_window.add_data(dance_data, dancer_id)
+                    self.dancers[dancer_id].movement_window.add_data(movement_data)
 
                     # Once sliding window is full, we can perform detections using the AI
-                    if self.dance_window.is_full():
-                        # Get correct format of AI data 
-                        ai_data = self.dance_window.get_ai_data(dancer_id, is_move=False)
-                        
-                        # Perform prediction of dance move
-                        cur_time = time.time()
-                        prediction = self.ai.fpga_evaluate_dance(ai_data)
-                        print(f"Dancer {dancer_id+1} Dance: {prediction} | {time.time() - time_now}s")
-
-                        # Store prediction in dance_filter_window
-                        # TODO
-
-                        # Check if filter window is full
-
-                        # Get maximum element from filter window 
-
-                        # Advance sliding window since a detection has finished
-                        self.dance_window.advance()
-
-                # Check for movement data
-                if not self.movement_data_queues[dancer_id].empty():
-                    movement_data = self.movement_data_queues[dancer_id].get()
-
-                    # Add data to sliding window to prepare for detections
-                    if self.movement_window.is_full():
+                    if self.dancers[dancer_id].movement_window.is_full():
                         # Get correct format of AI data
-                        ai_data = self.movement_window.get_ai_data(dancer_id, is_move=True)
+                        ai_data = self.dancers[dancer_id].movement_window.get_ai_data(is_move=True)
 
                         # Perform prediction of movement
                         cur_time = time.time()
-                        prediction = self.ai.fpga_evaluate_pos(ai_data)
-                        print(f"Dancer {dancer_id+1} Movement: {prediction} | {time.time() - time_now}s")
+                        movement_prediction = self.ai.fpga_evaluate_pos(ai_data)
+                        print(f"Dancer {dancer_id+1} Movement: {movement_prediction} | {time.time() - cur_time}s")
 
-                        # Store prediction in movement_filter_window
-                        # TODO
+                        movement_detection = self.dancers[dancer_id].handle_movement_filter(movement_prediction)
+                        self.state.add_movement_detection(movement_detection, dancer_id)
 
                         # Advance sliding window since a detection has finished
-                        self.movement_window.advance()
+                        self.dancers[dancer_id].movement_window.advance()
+
+                # Check for dance data
+                if not self.dancers[dancer_id].dance_data_queue.empty():
+                    dance_data = self.dancers[dancer_id].dance_data_queue.get()
+
+                    # Add data to sliding window to prepare for detections
+                    self.dancers[dancer_id].dance_window.add_data(dance_data)
+
+                    # Once sliding window is full, we can perform detections using the AI
+                    if self.dancers[dancer_id].dance_window.is_full():
+                        # Send imu_data to dashboard
+                        imu_data = self.dancers[dancer_id].dance_window.get_dashb_data(dancer_id)
+                        self.ext_conn.send_to_dashb(imu_data, "imu_data")
+                        
+                        # Get correct format of AI data 
+                        ai_data = self.dancers[dancer_id].dance_window.get_ai_data(is_move=False)
+                        
+                        # Perform prediction of dance move
+                        cur_time = time.time()
+                        dance_prediction = self.ai.fpga_evaluate_dance(ai_data)
+                        print(f"Dancer {dancer_id+1} Dance: {dance_prediction} | {time.time() - cur_time}s")
+
+                        # Handle getting start timestamp of dance
+                        if dance_prediction != "stationary":
+                            if movement_detection != "stationary" and movement_detection != None: # TODO consider removing to better handle disconnections
+                                # Get timestamp of very first packet in sliding window for dance_prediction
+                                timestamp = self.dancers[dancer_id].dance_window.store[1][0]
+                                print(f"Found timestamp: {timestamp}")
+                                self.state.add_start_timestamp(timestamp, dancer_id)
+
+                        dance_detection = self.dancers[dancer_id].handle_dance_filter(dance_prediction)
+                        self.state.add_dance_detection(dance_detection)
+
+                        # Advance sliding window since a detection has finished
+                        self.dancers[dancer_id].dance_window.advance()
+
+                
+            # Perform rest of logic here, once detections have been performed for each dancer
+            cur_state = self.state.process_state()
+
+            # We have successfully detected movement between dancers
+            if cur_state == State.MOVEMENT_READY:
+                # Movements have been detected
+
+                # Send movement data to dashboard
+                # self.ext_conn.send_to_dashb(self.state.get_pos_results_json(), "action")
+
+                # Reset queues, filters, etc.
+                self.dancers[0].reset()
+                self.dancers[1].reset()
+                self.dancers[2].reset()
+                self.state.reset() # TODO Check if doing this will mess up sync delay calculation
+            
+            # We have successfully detected dances as well
+            elif cur_state == State.DANCE_READY:
+                # Dances have been detected
+
+                print(f"Detected dance: {self.state.cur_dance}")
+                print(f"Detected pos: {self.state.cur_pos}")
+                print(f"Sync delay: {self.state.sync_delay}")
+
+                # Send data to evaluation server
+                # self.ext_conn.send_to_eval(tuple(self.state.cur_pos), self.state.cur_dance, self.state.sync_delay)
+                # Send dance data to dashboard
+                # self.ext_conn.send_to_dashb(self.state.get_move_results_json(), "action")
+
+                # Receive correct position from evaluation server
+                correct_pos = self.ext_conn.recv_pos()
+                if correct_pos != None:
+                    # TODO Double check that this is correct
+                    # self.state.cur_pos = f"{correct_pos[0]}{correct_pos[1]}{correct_pos[2]}"
+                    pass
+                else:
+                    # TODO False start, what special thing do I have to do here?
+                    pass
+
+                # Reset queues, filters, etc.
+                self.dancers[0].reset()
+                self.dancers[1].reset()
+                self.dancers[2].reset()
+                self.state.reset()
+
+            # No concrete detections are ready yet.
+            # This could be because of disconnections or inaccuracies in the models
+            else:
+                pass
+
 
 
 if __name__ == "__main__":

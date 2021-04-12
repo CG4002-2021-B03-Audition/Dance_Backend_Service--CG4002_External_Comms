@@ -6,30 +6,24 @@ SLIDING_WINDOW_SIZE = 30
 
 class SlidingWindow():
     def __init__(self, 
-            sliding_window_size=SLIDING_WINDOW_SIZE, 
+            window_size=SLIDING_WINDOW_SIZE, 
             step_size=int(SLIDING_WINDOW_SIZE/2)):
-        self.window_size = sliding_window_size
+        self.window_size = window_size
         self.step_size = step_size
-        self.store = [deque(), deque(), deque()]
+        self.store = deque()
 
-        self.test_ai_data = {
-            "gun": [[5083, 2754, 18, -27, 58, -293], [2936, 2753, 311, -23, 64, -294], [-320, 2467, 568, -14, 38, -302], [-1420, 2375, 901, -10, 34, -316], [-1891, 1406, 1187, -1, 118, -330], [-6896, -3304, 406, 38, 105, -358], [-11262, -8591, 817, 85, -36, -347], [-14237, -8680, -2541, 108, -160, -152], [-12171, -2047, -2573, -26, -31, 58], [-11115, -820, 1276, -37, 100, 89], [-13945, -759, -923, -58, 90, 137], [-13542, -11, -1819, -71, 47, 156], [-11652, -42, -2604, -89, 73, 183], [-12068, 663, -2605, -102, 87, 194], [-13167, 1555, -2231, -107, 35, 216], [-11882, 2736, -1941, -112, -6, 236], [-10644, 2819, -1415, -107, -26, 253], [-8243, 2253, 134, -83, -71, 268], [-6193, 2087, 786, -67, -102, 273], [-2445, 1844, 1192, -37, -165, 272], [2013, 939, 1102, -7, -181, 255], [4793, 288, 979, 6, -173, 232], [8462, 303, 732, 14, -145, 187], [11332, 1415, 108, 7, -112, 126], [13074, 2238, -332, -1, -90, 62], [15047, 3055, -424, -23, -44, -37], [15019, 3280, -286, -37, -10, -104], [12716, 2552, -73, -52, 27, -178], [-11140, -14263, -2893, 75, -105, -440]],
-            "sidepump": [[-13828, -2128, -8278, -177, 49, -25], [-15004, -3565, -8121, -205, -3, 0], [-15837, -5952, -7167, -225, -44, 52], [-14400, -9585, -3967, -183, -93, 115], [-12329, -9276, -3489, -155, -117, 111], [-9613, -8432, -3178, -125, -132, 103], [-7653, -7729, -2909, -106, -133, 94], [-4946, -6503, -2209, -77, -117, 76], [-3451, -5613, -1757, -61, -98, 59], [-1774, -4409, -1313, -41, -67, 31], [-732, -3459, -1147, -24, -41, 0], [-272, -3043, -1107, -12, -26, -21], [172, -2799, -1003, 7, -4, -51], [324, -2766, -890, 27, 21, -84], [228, -2945, -866, 43, 39, -109], [-106, -3758, -998, 66, 71, -150], [-579, -4981, -1017, 79, 104, -175], [-2721, -8248, -860, 103, 156, -206], [-8193, -12746, -776, 134, 156, -205], [-11962, -14420, -926, 141, 114, -178], [-14630, -15605, -131, 135, 62, -122], [-15437, -15734, 605, 144, 65, -93], [-16009, -14193, 796, 166, 58, -59], [-16235, -12112, -59, 187, 33, -27], [-15627, -7020, -4205, 195, -24, 52], [-14365, -4928, -5311, 175, -50, 78], [-12731, -3012, -5688, 148, -81, 94], [-11304, -2158, -5703, 130, -98, 98], [-8749, -1244, -5197, 109, -99, 104]],
-            "hair": [[-1703, -415, -316, 8, -54, 181], [278, 410, -163, 1, -28, 161], [1328, 1144, 221, -6, -4, 147], [2124, 2467, 967, -16, 24, 129], [2164, 3468, 1464, -22, 24, 117], [2131, 4687, 2213, -23, -7, 100], [2560, 5434, 2755, -24, -35, 89], [3013, 5591, 3062, -23, -37, 82], [3349, 5343, 3201, -20, -32, 75], [3472, 4762, 2890, -20, -39, 71], [3556, 4412, 2720, -22, -44, 68], [3823, 3653, 2619, -18, -48, 66], [4151, 3112, 2561, -12, -45, 66], [5128, 2577, 2481, -1, -36, 61], [5785, 2229, 2621, 13, -18, 55], [5961, 2096, 2653, 23, -10, 48], [6459, 1874, 2502, 37, 12, 37], [6617, 1831, 2385, 44, 29, 28], [6393, 1663, 2105, 55, 31, 6], [6475, 1973, 1642, 64, 32, -20], [6453, 2354, 1161, 68, 39, -41], [6214, 2889, 200, 68, 45, -74], [6196, 3848, -371, 62, 56, -92], [5886, 4891, -500, 53, 76, -110], [4835, 5602, -1091, 47, 67, -134], [4366, 6654, -1597, 41, 66, -147], [3623, 7232, -1714, 28, 97, -166], [2591, 7086, -1745, 14, 114, -177], [637, 7114, -1757, -8, 139, -188]]
-        }
+    def add_dancer_data(self, data):
+        self.store.append(data)
 
-    def add_dancer_data(self, data, dancer_id):
-        self.store[dancer_id].append(data)
-
-    def advance_window(self, dancer_id):
+    def advance_window(self):
         for i in range(0, self.step_size):
-            self.store[dancer_id].popleft()
+            self.store.popleft()
 
-    def is_window_full(self, dancer_id):
-        return len(self.store[dancer_id]) == self.window_size
+    def is_window_full(self):
+        return len(self.store) == self.window_size
 
-    def get_ai_data(self, dancer_id, is_move=False):
-        np_arr = np.array(self.store[dancer_id], dtype=object)
+    def get_ai_data(self, is_move=False):
+        np_arr = np.array(self.store, dtype=object)
         if is_move:
             return np_arr[:,1:7]
         else:
@@ -39,16 +33,58 @@ class SlidingWindow():
         data_arr = []
         for index in range(0, 1):#self.step_size):
             temp_dict = {}
-            temp_dict["timestamp"] = str(self.store[dancer_id][index][0])
-            temp_dict["accelX"] = self.store[dancer_id][index][2]
-            temp_dict["accelY"] = self.store[dancer_id][index][3]
-            temp_dict["accelZ"] = self.store[dancer_id][index][4]
-            temp_dict["gyroYaw"] = self.store[dancer_id][index][5]
-            temp_dict["gyroPitch"] = self.store[dancer_id][index][6]
-            temp_dict["gyroRoll"] = self.store[dancer_id][index][7]
+            temp_dict["timestamp"] = str(self.store[index][0])
+            temp_dict["accelX"] = self.store[index][2]
+            temp_dict["accelY"] = self.store[index][3]
+            temp_dict["accelZ"] = self.store[index][4]
+            temp_dict["gyroYaw"] = self.store[index][5]
+            temp_dict["gyroPitch"] = self.store[index][6]
+            temp_dict["gyroRoll"] = self.store[index][7]
             temp_dict["dancerId"] = dancer_id
             data_arr.append(temp_dict)
         return json.dumps(data_arr)
 
     def purge(self):
-        self.store = [deque(), deque(), deque()]
+        self.store = deque()
+
+class MAVWindow(SlidingWindow):
+    def __init__(self, window_size, mav_store_size=10):
+        
+        # Initialize actual sliding window
+        super().__init__(window_size=window_size)
+        
+        self.mav_store_size = mav_store_size
+        self.mav_store = deque()
+        self.sum = np.zeros(6)
+
+    # Overridden
+    def add_dancer_data(self, data):
+        if len(self.mav_store) < self.mav_store_size:
+            self.mav_store.append(data)
+            self.sum += np.array(data[1:7])
+        
+        # When sum comprises of self.mav_store_size terms
+        else:
+            # Calculate current average array
+            average = self.sum / self.mav_store_size
+            # Add average array to self.store
+            self.store.append(average)
+            
+            # Calculate new sum
+            # Before appending data, remove old data
+            old_data = self.mav_store.popleft()
+            self.sum -= np.array(old_data[1:7]) # Remove old_data from sum
+            self.sum += np.array(data[1:7]) # Add new data to sum
+            # Append new data to self.mav_store
+            self.mav_store.append(data)
+
+    # Overridden
+    def get_ai_data(self, is_move):
+        np_arr = np.array(self.store, dtype=object)
+        return np_arr
+
+    # Overridden
+    def purge(self):
+        self.sum = np.zeros(6)
+        self.mav_store = deque()
+        self.store = deque()

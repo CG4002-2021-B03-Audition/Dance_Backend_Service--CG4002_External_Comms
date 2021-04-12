@@ -16,7 +16,6 @@ class AI():
         self.dance_labels = np.array(['dab', 'elbowkick', 'gun', 'hair', 'left', 'listen', 'pointhigh', 'right', 'sidepump', 'special', 'stationary', 'wipetable'])
         self.pos_labels = np.array(['left', 'right', 'stationary'])
 
-        # TODO copy folders
         weight_0 = np.load('weights_final/weight_0.npy')
         weight_1 = np.load('weights_final/weight_1.npy')
         weight_2 = np.load('weights_final/weight_2.npy')

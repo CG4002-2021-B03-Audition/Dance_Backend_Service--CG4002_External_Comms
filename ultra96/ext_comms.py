@@ -29,9 +29,6 @@ class ExtComms():
 
         self.dashb_channel.queue_declare(queue="emg_data", durable=True)
         self.dashb_channel.queue_bind(exchange="events", queue="emg_data", routing_key="emg_data")
-
-        self.dashb_channel.queue_declare(queue="flags", durable=True)
-        self.dashb_channel.queue_bind(exchange="events", queue="flags", routing_key="flags")
         print("Connection to dashboard successful!")
 
         self.secret_key_string = secret_key_string
@@ -40,7 +37,8 @@ class ExtComms():
     def recv_pos(self):      
         recv_msg = None
         try:
-            recv_msg = self.eval_conn.recv(1024).decode()
+            # TODO UNCOMMENT
+            # recv_msg = self.eval_conn.recv(1024).decode()
             print(f"Correct positions: {recv_msg}")
         except:
             print("Eval server receive timed out")
@@ -72,8 +70,8 @@ class ExtComms():
 
     def send_to_dashb(self, json_object, routing_key):
         print(json_object)
+        # TODO UNCOMMENT
         #self.dashb_channel.basic_publish(exchange="events", routing_key=routing_key, body=json_object)
-
 
     def send_emg_data(self, emg_value):
         temp_dict = {
@@ -81,38 +79,5 @@ class ExtComms():
             "value": emg_value
         }
         self.send_to_dashb(json.dumps(temp_dict), "emg_data")
-
-
-
-    def send_start_move_msg(self):
-        print("Telling dashboard to start move")
-        temp_dict = {
-            "message": "start_move"
-        }
-        self.send_to_dashb(json.dumps(temp_dict), "flags")
-
-    def send_stop_move_msg(self):
-        print("Telling dashboard to stop move")
-        temp_dict = {
-            "message": "stop_move"
-        }
-        self.send_to_dashb(json.dumps(temp_dict), "flags")
-
-
-
-
-    def send_start_pos_msg(self):
-        print("Telling dashboard to start position")
-        temp_dict = {
-            "message": "start_pos"
-        }
-        self.send_to_dashb(json.dumps(temp_dict), "flags")
-
-    def send_stop_pos_msg(self):
-        print("Telling dashboard to stop position")
-        temp_dict = {
-            "message": "stop_pos"
-        }
-        self.send_to_dashb(json.dumps(temp_dict), "flags")
 
     
