@@ -44,57 +44,6 @@ class Main():
         recv_thread.daemon = True
         recv_thread.start()
 
-        """
-        CASES FOR EACH DANCER
-
-        Arm sending none: Dancer thread will output disconnected
-        Waist sending none: Dancer thread will output disconnected
-
-        Arm sending none: This is considered a position change
-        Waist disconnected: waist_movement_buffer is not full, but arm_movement_buffer will be full
-                            so this is considered a DISCONNECT path. We will do a majority voting
-                            for what is available in both buffers. The possible outputs here
-                            can be "none", "left", or "right". We will use this data for position detection.
-                            We will not be in dance mode because arm outputs a position. 
-                            If arm outputs a dance move, we will not come to this part of the movement thread.
-                            We will only come here if the dance outputs a position. So it is safe?
-
-        Arm disconnected: Dancer thread will output disconnected. 
-        Waist sending none: This can be either during a dance move, or during a position change. We can't
-                            know for sure which state we are in. Hmm
-                            In this case, we will take majority voting again.
-                            If we are in dance state, we do nothing.
-                            If we are in position state, we use this value.
-
-        ---
-
-        Arm sending move: This is considered a position change
-        Waist sending move: This is considered a position change. We will use both buffers to get a
-                            consensus of all moves. All moves in both arm and waist movement buffers
-                            need to be the same in this case. If this happens we are definitely
-                            in the position state. We use this output value in our movement detection system.
-
-        Arm sending move: This is definitely a dance move. So we don't care if there is a disconnection
-                          from the waist.
-        Waist disconnected: Waist thread will output disconnectd.
-
-        Arm disconnected:     This is the same as    Arm disconnected
-        Waist sending move:                          Waist sending none 
-
-        ---
-
-        Arm sending dance: As long as a dance is being sent, we don't care about what's going on
-                           with the movement thread.
-        Waist sending none: 
-        
-        Arm sending dance: As long as a dance is being sent, we don't care about movement thread.
-        Waist sending move:
-
-        Arm sending dance:
-        Waist disconnected:
-
-        """
-
     def run(self):
         cur_time = 0
         first_packet = True
