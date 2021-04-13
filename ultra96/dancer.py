@@ -7,11 +7,11 @@ import time
 
 MAX_QUEUE_SIZE = 60
 DANCE_MAX_FILTER_SIZE = 7
-DANCE_FILTER_THRESHOLD = 5
+DANCE_FILTER_THRESHOLD = 4
 DANCE_FILTER_WINDOW_STEP_SIZE = 1
 
 MOVEMENT_MAX_FILTER_SIZE = 7
-MOVEMENT_FILTER_THRESHOLD = 5
+MOVEMENT_FILTER_THRESHOLD = 4 #5
 MOVEMENT_FILTER_WINDOW_STEP_SIZE = 1
 
 class Dancer():
@@ -19,11 +19,9 @@ class Dancer():
         self.dancer_id = dancer_id
         self.dance_filter = Queue(DANCE_MAX_FILTER_SIZE)
         self.movement_filter = Queue(MOVEMENT_MAX_FILTER_SIZE)
-
-        self.dance_window = SlidingWindow(window_size=40)
-        #self.dance_window = MAVWindow(40)#SlidingWindow(window_size=40)
-        #self.movement_window = SlidingWindow(window_size=40)
-        self.movement_window = MAVWindow(40)
+        
+        self.dance_window = MAVWindow(40, mav_store_size=10)
+        self.movement_window = MAVWindow(40, mav_store_size=10)
 
         self.dance_data_queue = Queue(MAX_QUEUE_SIZE)
         self.movement_data_queue = Queue(MAX_QUEUE_SIZE)
@@ -70,7 +68,7 @@ class Dancer():
     """
     def add_to_dance_data_queue(self, packet):
         if self.dance_data_queue.full():
-            print(f"Dancer {self.dancer_id+1} dance queue full, dropping old packets")
+            #print(f"Dancer {self.dancer_id+1} dance queue full, dropping old packets")
             while not self.dance_data_queue.empty():
                 x = self.dance_data_queue.get()
         self.dance_data_queue.put(packet)
@@ -83,7 +81,7 @@ class Dancer():
     """
     def add_to_movement_data_queue(self, packet):
         if self.movement_data_queue.full():
-            print(f"Dancer {self.dancer_id+1} movement queue full, dropping old packets")
+            #print(f"Dancer {self.dancer_id+1} movement queue full, dropping old packets")
             while not self.movement_data_queue.empty():
                 x = self.movement_data_queue.get()
         self.movement_data_queue.put(packet)
@@ -103,54 +101,5 @@ class Dancer():
 
         self.dance_window.purge()
         self.movement_window.purge()
-
-# TODO See if I want to incorporate this disconnection code
-"""
-    def dance_thread_func(self):
-        while True:
-            if not self.dance_queue.empty():
-                self.last_arm_time = time.time()
-                if self.is_arm_connected == False:
-                    print(f"Dancer {self.dancer_id} arm connected")
-                    self.dance_window.purge() # Reset the sliding window when we reconnect
-                    self.is_arm_connected = True
-
-                dance_data = self.dance_queue.get()
-                self.dance_window.add_data(dance_data)
-                if self.dance_window.is_full():
-                    # Send IMU data to dashboard
-                    dashb_imu_data = self.dance_window.get_dashb_data(self.dancer_id)
-                    self.ext_conn.send_to_dashb(dashb_imu_data, "imu_data")
-
-            else: # No data available, check for disconnect
-                if self.is_arm_connected == True:
-                    cur_time = time.time()
-                    if cur_time - self.last_arm_time > DISCONNECT_CHECK_INTERVAL:
-                        print(f"Dancer {self.dancer_id} arm disconnected")
-                        self.is_arm_connected = False
-
-
-    def movement_thread_func(self):
-        while True:
-            if not self.movement_queue.empty(): # Movement queue has data available
-                self.last_waist_time = time.time()
-                if self.is_waist_connected == False:
-                    print(f"Dancer {self.dancer_id} waist connected")
-                    self.movement_window.purge() # Reset the sliding window when we reconnect
-                    self.is_waist_connected = True
-                
-                movement_data = self.movement_queue.get()
-                self.movement_window.add_data(movement_data)
-                if self.movement_window.is_full():
-                    pass
-
-            else: # No data available, check for disconnect
-                if self.is_waist_connected == True:
-                    cur_time = time.time()
-                    if cur_time - self.last_waist_time > DISCONNECT_CHECK_INTERVAL:
-                        print(f"Dancer {self.dancer_id} waist disconnected")
-                        self.is_waist_connected = False
-"""
-
     
 

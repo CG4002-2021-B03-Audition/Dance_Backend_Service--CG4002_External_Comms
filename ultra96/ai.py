@@ -13,31 +13,34 @@ class AI():
     def __init__(self):
         global dma
 
-        self.dance_labels = np.array(['dab', 'elbowkick', 'gun', 'hair', 'left', 'listen', 'pointhigh', 'right', 'sidepump', 'special', 'stationary', 'wipetable'])
+        self.dance_labels = np.array(['dab', 'elbowkick', 'gun', 'hair', 'left', 'listen', 'pointhigh', 'right', 'sidepump', 'logout', 'stationary', 'wipetable'])
         self.pos_labels = np.array(['left', 'right', 'stationary'])
 
-        weight_0 = np.load('weights_final/weight_0.npy')
-        weight_1 = np.load('weights_final/weight_1.npy')
-        weight_2 = np.load('weights_final/weight_2.npy')
-        weight_3 = np.load('weights_final/weight_3.npy')
-        weight_4 = np.load('weights_final/weight_4.npy')
-        bias_0 = np.load('weights_final/bias_0.npy')
-        bias_1 = np.load('weights_final/bias_1.npy')
-        bias_2 = np.load('weights_final/bias_2.npy')
-        bias_3 = np.load('weights_final/bias_3.npy')
-        bias_4 = np.load('weights_final/bias_4.npy')
-        weight_0_pos = np.load('weights_3dance_pos/weight_0.npy')
-        weight_1_pos = np.load('weights_3dance_pos/weight_1.npy')
-        weight_2_pos = np.load('weights_3dance_pos/weight_2.npy')
-        weight_3_pos = np.load('weights_3dance_pos/weight_3.npy')
-        bias_0_pos = np.load('weights_3dance_pos/bias_0.npy')
-        bias_1_pos = np.load('weights_3dance_pos/bias_1.npy')
-        bias_2_pos = np.load('weights_3dance_pos/bias_2.npy')
-        bias_3_pos = np.load('weights_3dance_pos/bias_3.npy')
-        self.scaler_mean = np.load('weights_final/mean.npy')
-        self.scaler_scale = np.load('weights_final/scale.npy')
-        self.scaler_mean_pos = np.load('weights_3dance_pos/scaler_mean.npy')
-        self.scaler_scale_pos = np.load('weights_3dance_pos/scaler_scale.npy')
+        dance_weights_dir = "weights_dance_sat_40_mav_10_new"
+        pos_weights_dir = "weights_pos_sat_40_mav_10_stat"
+
+        weight_0 = np.load(f'{dance_weights_dir}/weight_0.npy')
+        weight_1 = np.load(f'{dance_weights_dir}/weight_1.npy')
+        weight_2 = np.load(f'{dance_weights_dir}/weight_2.npy')
+        weight_3 = np.load(f'{dance_weights_dir}/weight_3.npy')
+        weight_4 = np.load(f'{dance_weights_dir}/weight_4.npy')
+        bias_0 = np.load(f'{dance_weights_dir}/bias_0.npy')
+        bias_1 = np.load(f'{dance_weights_dir}/bias_1.npy')
+        bias_2 = np.load(f'{dance_weights_dir}/bias_2.npy')
+        bias_3 = np.load(f'{dance_weights_dir}/bias_3.npy')
+        bias_4 = np.load(f'{dance_weights_dir}/bias_4.npy')
+        weight_0_pos = np.load(f'{pos_weights_dir}/weight_0.npy')
+        weight_1_pos = np.load(f'{pos_weights_dir}/weight_1.npy')
+        weight_2_pos = np.load(f'{pos_weights_dir}/weight_2.npy')
+        weight_3_pos = np.load(f'{pos_weights_dir}/weight_3.npy')
+        bias_0_pos = np.load(f'{pos_weights_dir}/bias_0.npy')
+        bias_1_pos = np.load(f'{pos_weights_dir}/bias_1.npy')
+        bias_2_pos = np.load(f'{pos_weights_dir}/bias_2.npy')
+        bias_3_pos = np.load(f'{pos_weights_dir}/bias_3.npy')
+        self.scaler_mean = np.load(f'{dance_weights_dir}/mean.npy')
+        self.scaler_scale = np.load(f'{dance_weights_dir}/scale.npy')
+        self.scaler_mean_pos = np.load(f'{pos_weights_dir}/scaler_mean.npy')
+        self.scaler_scale_pos = np.load(f'{pos_weights_dir}/scaler_scale.npy')
 
         overlay = Overlay('final.bit')   # load bitstream inside FPGA
         dma = overlay.axi_dma_0    

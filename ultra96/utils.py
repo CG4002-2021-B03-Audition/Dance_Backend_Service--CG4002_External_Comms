@@ -2,18 +2,20 @@ import random
 import threading
 
 class Timeout():
-    def __init__(self, duration):
+    def __init__(self, duration, name):
+        self.name = name
         self.has_started = False
-        self.has_ended = False
+        self.has_ended = True
         self.duration = duration
         self.internal_timer = None
 
     def timeout_func(self):
-        print("TIMED OUT")
+        print(f"{self.name} TIMED OUT")
         self.has_ended = True
 
     def start(self):
         if self.has_started == False:
+            print(f"{self.name} TIMER STARTED")
             self.internal_timer = threading.Timer(self.duration, self.timeout_func)
             self.internal_timer.start()
             self.has_started = True
@@ -21,9 +23,12 @@ class Timeout():
 
     def stop(self):
         if self.has_started == True:
-            self.internal_timer.cancel()
+            try:
+                self.internal_timer.cancel()
+            except:
+                pass
             self.has_started = False
-            self.has_ended = False
+            self.has_ended = True
 
     def has_timed_out(self):
         return self.has_ended

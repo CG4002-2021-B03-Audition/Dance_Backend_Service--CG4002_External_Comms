@@ -22,16 +22,14 @@ class SlidingWindow():
     def is_full(self):
         return len(self.store) == self.window_size
 
-    def get_ai_data(self, is_move=False):
+    def get_ai_data(self):
         np_arr = np.array(self.store, dtype=object)
-        if is_move:
-            return np_arr[:,1:7]
-        else:
-            return np_arr[:,2:8]
+        return np_arr[:,2:8]
 
     def get_dashb_data(self, dancer_id):
         data_arr = []
         for index in range(0, 1):#self.step_size):
+            x = self.store[index]
             temp_dict = {}
             temp_dict["timestamp"] = str(self.store[index][0])
             temp_dict["accelX"] = self.store[index][2]
@@ -48,7 +46,7 @@ class SlidingWindow():
         self.store = deque()
 
 class MAVWindow(SlidingWindow):
-    def __init__(self, window_size, mav_store_size=10):
+    def __init__(self, window_size, mav_store_size=1):
         
         # Initialize actual sliding window
         super().__init__(window_size=window_size)
@@ -60,34 +58,28 @@ class MAVWindow(SlidingWindow):
     # Overridden
     def add_data(self, data):
         if len(self.mav_store) < self.mav_store_size:
-            data[1] = 0
-            data[3] = 0
             self.mav_store.append(data)
-            self.sum += np.array(data[1:7])
+            self.sum += np.array(data[2:8])
         
         # When sum comprises of self.mav_store_size terms
         else:
+            # Before appending data, remove old data
+            old_data = self.mav_store.popleft()
+            
             # Calculate current average array
             average = self.sum / self.mav_store_size
             # Add average array to self.store
-            #print(f"Average: {average}")
-            self.store.append(average)
+            # print(f"Average: {average}")
+            append_data = [old_data[0], old_data[1]]
+            append_data.extend(average)
+            self.store.append(append_data)
             
             # Calculate new sum
-            # Before appending data, remove old data
-            old_data = self.mav_store.popleft()
-            #print(f"Normal data: {old_data[1:7]}")
-            self.sum -= np.array(old_data[1:7]) # Remove old_data from sum
-            data[1] = 0
-            data[3] = 0
-            self.sum += np.array(data[1:7]) # Add new data to sum
+            # print(f"Normal data: {old_data[2:8]}")
+            self.sum -= np.array(old_data[2:8]) # Remove old_data from sum
+            self.sum += np.array(data[2:8]) # Add new data to sum
             # Append new data to self.mav_store
             self.mav_store.append(data)
-
-    # Overridden
-    def get_ai_data(self, is_move):
-        np_arr = np.array(self.store, dtype=object)
-        return np_arr
 
     # Overridden
     def purge(self):
