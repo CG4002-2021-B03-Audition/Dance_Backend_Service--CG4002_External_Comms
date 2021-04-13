@@ -21,7 +21,7 @@ class Dancer():
         self.movement_filter = Queue(MOVEMENT_MAX_FILTER_SIZE)
 
         self.dance_window = SlidingWindow(window_size=40)
-        self.dance_window = MAVWindow(40)#SlidingWindow(window_size=40)
+        #self.dance_window = MAVWindow(40)#SlidingWindow(window_size=40)
         #self.movement_window = SlidingWindow(window_size=40)
         self.movement_window = MAVWindow(40)
 

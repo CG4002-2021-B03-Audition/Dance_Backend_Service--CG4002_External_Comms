@@ -130,8 +130,8 @@ class Main():
                     # Once sliding window is full, we can perform detections using the AI
                     if self.dancers[dancer_id].dance_window.is_full():
                         # Send imu_data to dashboard
-                        imu_data = self.dancers[dancer_id].dance_window.get_dashb_data(dancer_id)
-                        self.ext_conn.send_to_dashb(imu_data, "imu_data")
+                        # imu_data = self.dancers[dancer_id].dance_window.get_dashb_data(dancer_id)
+                        # self.ext_conn.send_to_dashb(imu_data, "imu_data")
                         
                         # Get correct format of AI data 
                         ai_data = self.dancers[dancer_id].dance_window.get_ai_data(is_move=False)
@@ -150,7 +150,7 @@ class Main():
                                 self.state.add_start_timestamp(timestamp, dancer_id)
 
                         dance_detection = self.dancers[dancer_id].handle_dance_filter(dance_prediction)
-                        self.state.add_dance_detection(dance_detection)
+                        self.state.add_dance_detection(dance_detection, dancer_id)
                         #print(f"Dancer {dancer_id+1} Dance: {dance_detection}")
 
                         # Advance sliding window since a detection has finished
