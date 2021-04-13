@@ -47,7 +47,7 @@ def find_most_common(item_list):
         elif item_freqs[item] == max_item_freq:
             most_common_items.append(item)
     
-    print(item_freqs)
+    #print(item_freqs)
     accuracy = max_item_freq / len(item_list)
     most_common_item = random.choice(most_common_items)
 

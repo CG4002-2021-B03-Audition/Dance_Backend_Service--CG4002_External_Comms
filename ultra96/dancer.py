@@ -6,18 +6,23 @@ from queue import Queue
 import time
 
 MAX_QUEUE_SIZE = 60
-MAX_FILTER_SIZE = 7
-FILTER_THRESHOLD = 5
-FILTER_WINDOW_STEP_SIZE = 1
+DANCE_MAX_FILTER_SIZE = 7
+DANCE_FILTER_THRESHOLD = 5
+DANCE_FILTER_WINDOW_STEP_SIZE = 1
+
+MOVEMENT_MAX_FILTER_SIZE = 7
+MOVEMENT_FILTER_THRESHOLD = 5
+MOVEMENT_FILTER_WINDOW_STEP_SIZE = 1
 
 class Dancer():
     def __init__(self, dancer_id):
         self.dancer_id = dancer_id
-        self.dance_filter = Queue(MAX_FILTER_SIZE)
-        self.movement_filter = Queue(MAX_FILTER_SIZE)
+        self.dance_filter = Queue(DANCE_MAX_FILTER_SIZE)
+        self.movement_filter = Queue(MOVEMENT_MAX_FILTER_SIZE)
 
         self.dance_window = SlidingWindow(window_size=40)
-        # self.movement_window = SlidingWindow(window_size=40)
+        self.dance_window = MAVWindow(40)#SlidingWindow(window_size=40)
+        #self.movement_window = SlidingWindow(window_size=40)
         self.movement_window = MAVWindow(40)
 
         self.dance_data_queue = Queue(MAX_QUEUE_SIZE)
@@ -28,14 +33,14 @@ class Dancer():
         
         self.dance_filter.put(prediction)
         if self.dance_filter.full():
-            most_common_prediction, prediction_freq, accuracy = utils.most_common_item(list(self.dance_filter))
+            most_common_prediction, prediction_freq, accuracy = utils.find_most_common(list(self.dance_filter.queue))
             
             # Check if most common prediction frequency >= FILTER_THRESHOLD
-            if prediction_freq >= FILTER_THRESHOLD:
+            if prediction_freq >= DANCE_FILTER_THRESHOLD:
                 res = most_common_prediction
             
             # Advance filter window by FILTER_WINDOW_STEPS_SIZE
-            for i in range(0, FILTER_WINDOW_STEP_SIZE):
+            for i in range(0, DANCE_FILTER_WINDOW_STEP_SIZE):
                 x = self.dance_filter.get()
         
         return res
@@ -46,14 +51,14 @@ class Dancer():
         
         self.movement_filter.put(prediction)
         if self.movement_filter.full():
-            most_common_prediction, prediction_freq, accuracy = utils.most_common_item(list(self.dance_filter))
+            most_common_prediction, prediction_freq, accuracy = utils.find_most_common(list(self.movement_filter.queue))
             
             # Check if most common prediction frequency >= FILTER_THRESHOLD
-            if prediction_freq >= FILTER_THRESHOLD:
+            if prediction_freq >= MOVEMENT_FILTER_THRESHOLD:
                 res = most_common_prediction
             
             # Advance filter window by FILTER_WINDOW_STEPS_SIZE
-            for i in range(0, FILTER_WINDOW_STEP_SIZE):
+            for i in range(0, MOVEMENT_FILTER_WINDOW_STEP_SIZE):
                 x = self.movement_filter.get()
         
         return res
@@ -65,7 +70,7 @@ class Dancer():
     """
     def add_to_dance_data_queue(self, packet):
         if self.dance_data_queue.full():
-            print(f"Dancer {self.dancer_id} dance queue full, dropping old packets")
+            print(f"Dancer {self.dancer_id+1} dance queue full, dropping old packets")
             while not self.dance_data_queue.empty():
                 x = self.dance_data_queue.get()
         self.dance_data_queue.put(packet)
@@ -78,7 +83,7 @@ class Dancer():
     """
     def add_to_movement_data_queue(self, packet):
         if self.movement_data_queue.full():
-            print(f"Dancer {self.dancer_id} movement queue full, dropping old packets")
+            print(f"Dancer {self.dancer_id+1} movement queue full, dropping old packets")
             while not self.movement_data_queue.empty():
                 x = self.movement_data_queue.get()
         self.movement_data_queue.put(packet)
@@ -94,7 +99,7 @@ class Dancer():
             x = self.dance_data_queue.get()
 
         while not self.movement_data_queue.empty():
-            x = self.movement_data_queue.get()\
+            x = self.movement_data_queue.get()
 
         self.dance_window.purge()
         self.movement_window.purge()

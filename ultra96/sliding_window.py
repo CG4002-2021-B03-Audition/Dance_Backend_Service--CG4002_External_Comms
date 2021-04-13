@@ -12,14 +12,14 @@ class SlidingWindow():
         self.step_size = step_size
         self.store = deque()
 
-    def add_dancer_data(self, data):
+    def add_data(self, data):
         self.store.append(data)
 
-    def advance_window(self):
+    def advance(self):
         for i in range(0, self.step_size):
             self.store.popleft()
 
-    def is_window_full(self):
+    def is_full(self):
         return len(self.store) == self.window_size
 
     def get_ai_data(self, is_move=False):
@@ -58,8 +58,10 @@ class MAVWindow(SlidingWindow):
         self.sum = np.zeros(6)
 
     # Overridden
-    def add_dancer_data(self, data):
+    def add_data(self, data):
         if len(self.mav_store) < self.mav_store_size:
+            data[1] = 0
+            data[3] = 0
             self.mav_store.append(data)
             self.sum += np.array(data[1:7])
         
@@ -68,12 +70,16 @@ class MAVWindow(SlidingWindow):
             # Calculate current average array
             average = self.sum / self.mav_store_size
             # Add average array to self.store
+            #print(f"Average: {average}")
             self.store.append(average)
             
             # Calculate new sum
             # Before appending data, remove old data
             old_data = self.mav_store.popleft()
+            #print(f"Normal data: {old_data[1:7]}")
             self.sum -= np.array(old_data[1:7]) # Remove old_data from sum
+            data[1] = 0
+            data[3] = 0
             self.sum += np.array(data[1:7]) # Add new data to sum
             # Append new data to self.mav_store
             self.mav_store.append(data)

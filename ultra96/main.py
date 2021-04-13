@@ -115,6 +115,7 @@ class Main():
 
                         movement_detection = self.dancers[dancer_id].handle_movement_filter(movement_prediction)
                         self.state.add_movement_detection(movement_detection, dancer_id)
+                        #print(f"Dancer {dancer_id+1} Movement: {movement_detection}")
 
                         # Advance sliding window since a detection has finished
                         self.dancers[dancer_id].movement_window.advance()
@@ -150,6 +151,7 @@ class Main():
 
                         dance_detection = self.dancers[dancer_id].handle_dance_filter(dance_prediction)
                         self.state.add_dance_detection(dance_detection)
+                        #print(f"Dancer {dancer_id+1} Dance: {dance_detection}")
 
                         # Advance sliding window since a detection has finished
                         self.dancers[dancer_id].dance_window.advance()
