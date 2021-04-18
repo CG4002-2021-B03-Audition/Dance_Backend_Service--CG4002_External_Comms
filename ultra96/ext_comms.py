@@ -11,8 +11,8 @@ RABBIT_MQ_URL = "amqps://oojdxuzo:p30AjrBcvzi-HHaw0j0F51TsSZsg672x@gerbil.rmq.cl
 
 class ExtComms():
     def __init__(self, secret_key_string="PLSPLSPLSPLSWORK"):        
-        self.eval_ip = input("Enter evaluation server IP: ")
-        self.eval_port = int(input("Enter evaluation server port: "))
+        self.eval_ip = "137.132.92.73" #input("Enter evaluation server IP:")
+        self.eval_port = int(input("Enter evaluation server port:"))
         
         print("Starting connection to evaluation server...")
         self.eval_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -68,11 +68,12 @@ class ExtComms():
 
 
     def send_to_dashb(self, json_object, routing_key):
-        #print(json_object)
         try:
             self.dashb_channel.basic_publish(exchange="events", routing_key=routing_key, body=json_object)
-        except:
-            #print("error lmao")
+            if routing_key == "action":
+                print(f"sent: {json_object}")
+        except Exception as e:
+            print(e)
             pass
 
     def send_emg_data(self, emg_value):

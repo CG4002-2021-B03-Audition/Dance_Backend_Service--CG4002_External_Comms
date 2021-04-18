@@ -33,6 +33,9 @@ class Timeout():
     def has_timed_out(self):
         return self.has_ended
 
+    def is_running(self):
+        return not self.has_timed_out()
+
 
 def find_most_common(item_list):
     most_common_items = []

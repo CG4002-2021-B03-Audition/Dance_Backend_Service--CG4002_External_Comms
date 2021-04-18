@@ -8,8 +8,9 @@ import struct
 import zmq
 import time
 import utils
+from queue import Queue
 
-DISCONNECT_TIME = 1
+DISCONNECT_TIME = 3
 
 class PacketType():
     DANCE_PACKET = 0
@@ -17,7 +18,7 @@ class PacketType():
     EMG_PACKET = 2
 
 class Main():
-    def __init__(self, listen_port=3001):
+    def __init__(self, listen_port=3003):
         self.ai = AI()
         self.state = State(num_action_trials=20)
         self.ext_conn = ExtComms()
@@ -26,8 +27,6 @@ class Main():
         self.dancers = [Dancer(0), Dancer(1), Dancer(2)]
 
         self.connected_arms = set()
-        self.connected_waists = set()
-        self.last_waist_times = [0, 0, 0]
         self.last_arm_times = [0, 0, 0]
 
         print("Starting server for laptops...")
@@ -44,6 +43,8 @@ class Main():
         recv_thread = threading.Thread(target=self.recv_thread_func)
         recv_thread.daemon = True
         recv_thread.start()
+
+        self.emg_data_queue = Queue(10)
 
         self.init_check = True
         self.init_timeout = utils.Timeout(15, "INIT")
@@ -66,6 +67,7 @@ class Main():
                 res.append(start_flag) # Appending start flag (Index -1)
                 packet_type = PacketType.DANCE_PACKET
 
+            # Deprecated
             elif len(raw_msg) == 13: # Movement packet
                 res.extend(list(struct.unpack('<B 6h', raw_msg)))
                 movement_dir = int(format(res[1], '02x')[0])
@@ -95,13 +97,6 @@ class Main():
                     if cur_time - self.last_arm_times[i] > DISCONNECT_TIME:
                         self.connected_arms.remove(i)
                         print(f"Arm {i+1} disconnected")
-            
-            cur_time = time.time()
-            for i in range(0, 3):
-                if i in self.connected_waists:
-                    if cur_time - self.last_waist_times[i] > DISCONNECT_TIME:
-                        self.connected_waists.remove(i)
-                        print(f"Waist {i+1} disconnected")
                     
 
     def recv_thread_func(self):
@@ -118,17 +113,16 @@ class Main():
                 self.last_arm_times[dancer_id] = time.time()
 
             elif packet_type == PacketType.MOVEMENT_PACKET:
-                self.dancers[dancer_id].add_to_movement_data_queue(parsed_msg)
-
-                # Update receive times for waist
-                if dancer_id not in self.connected_waists:
-                    self.connected_waists.add(dancer_id)
-                    print(f"Waist {dancer_id+1} connected")
-                self.last_waist_times[dancer_id] = time.time()
+                # deprecated
+                pass
 
             elif packet_type == PacketType.EMG_PACKET:
-                self.ext_conn.send_emg_data(parsed_msg[0])
-
+                pass
+                # if self.emg_data_queue.full():
+                #     while not self.emg_data_queue.empty():
+                #         x = self.emg_data_queue.get()
+                #     self.emg_data_queue.put(parsed_msg[0])
+                
             else:
                 raise Exception(f"Unknown PacketType: {packet_type}")                
 
@@ -136,47 +130,24 @@ class Main():
     def run(self):
         # Run forever
         while True:
-            # # Perform check initially to give sensors time to connect
-            # if self.init_check:
-            #     print("WAITING FOR ALL TO CONNECT")
-            #     while not (len(self.connected_arms) == 3 and len(self.connected_waists) == 3):
-            #         continue
-            #     print("ALL CONNECTED, WAITING 15 SECONDS")
-            #     self.init_timeout.start()
-            #     while not self.init_timeout.has_timed_out():
-            #         continue
-            #     self.init_check = False
+            # Perform check initially to give sensors time to connect
+            if self.init_check:
+                print("WAITING FOR ALL TO CONNECT")
+                while len(self.connected_arms) != 3:
+                    continue
+                print("ALL CONNECTED, WAITING 15 SECONDS")
+                self.init_timeout.start()
+                while self.init_timeout.is_running():
+                    continue
+                self.init_check = False
             
+            # if not self.emg_data_queue.empty():
+            #     data = self.emg_data_queue.get()
+            #     self.ext_conn.send_emg_data(data)
+
             # Iterate over all dancers
             for dancer_id in range(0, 3): 
-
-                movement_detection = None
-                dance_detection = None                
-                
-                # Check for movement data
-                if not self.dancers[dancer_id].movement_data_queue.empty():
-                    movement_data = self.dancers[dancer_id].movement_data_queue.get()
-
-                    # Add data to sliding window to prepare for detections
-                    self.dancers[dancer_id].movement_window.add_data(movement_data)
-
-                    # Once sliding window is full, we can perform detections using the AI
-                    if self.dancers[dancer_id].movement_window.is_full():
-                        # Get correct format of AI data
-                        ai_data = self.dancers[dancer_id].movement_window.get_ai_data()
-
-                        # Perform prediction of movement
-                        cur_time = time.time()
-                        movement_prediction = self.ai.fpga_evaluate_pos(ai_data)
-                        # print(f"Dancer {dancer_id+1} Movement: {movement_prediction} | {time.time() - cur_time}s")
-
-                        movement_detection = self.dancers[dancer_id].handle_movement_filter(movement_prediction)
-                        self.state.add_movement_detection(movement_detection, dancer_id)
-                        # if movement_detection != None and movement_detection != "stationary":
-                        #     print(f"Dancer {dancer_id+1} Movement: {movement_detection}")
-
-                        # Advance sliding window since a detection has finished
-                        self.dancers[dancer_id].movement_window.advance()
+                dance_detection = None
 
                 # Check for dance data
                 if not self.dancers[dancer_id].dance_data_queue.empty():
@@ -195,17 +166,14 @@ class Main():
                         ai_data = self.dancers[dancer_id].dance_window.get_ai_data()
                         
                         # Perform prediction of dance move
-                        cur_time = time.time()
+                        # cur_time = time.time()
                         dance_prediction = self.ai.fpga_evaluate_dance(ai_data)
                         # print(f"Dancer {dancer_id+1} Dance: {dance_prediction} | {time.time() - cur_time}s")
 
                         # Handle getting start timestamp of dance
-                        if dance_prediction not in set(["right", "left", "stationary"]):
-                            if movement_detection != "stationary" and movement_detection != None: # TODO consider removing to better handle disconnections
-                                # Get timestamp of very first packet in sliding window for dance_prediction
-                                timestamp = self.dancers[dancer_id].dance_window.store[0][0]
-                                print(f"Found timestamp: {timestamp}")
-                                self.state.add_start_timestamp(timestamp, dancer_id)
+                        if dance_prediction not in self.state.pos_labels:
+                            timestamp = self.dancers[dancer_id].dance_window.store[0][0]
+                            self.state.add_start_timestamp(timestamp, dancer_id)
 
                         dance_detection = self.dancers[dancer_id].handle_dance_filter(dance_prediction)
                         self.state.add_dance_detection(dance_detection, dancer_id)
@@ -214,9 +182,6 @@ class Main():
 
                         # Advance sliding window since a detection has finished
                         self.dancers[dancer_id].dance_window.advance()
-
-                # if movement_detection is not None and dance_detection is not None:
-                #     print(f"Dancer {dancer_id+1} | M: {movement_detection} | D: {dance_detection}")
 
 
             # Perform rest of logic here, once detections have been performed for each dancer
@@ -227,14 +192,11 @@ class Main():
                 # Movements have been detected
                 print("MOVEMENTS DETECTED")
 
-                # Send movement data to dashboard
-                self.ext_conn.send_to_dashb(self.state.get_pos_results_json(), "action")
-
                 # Reset queues, filters, etc.
                 self.dancers[0].reset()
                 self.dancers[1].reset()
                 self.dancers[2].reset()
-                self.state.reset() # TODO Check if doing this will mess up sync delay calculation
+                self.state.reset()
             
             # We have successfully detected dances as well
             elif cur_state == State.DANCE_READY:
@@ -247,6 +209,8 @@ class Main():
 
                 # Send data to evaluation server
                 self.ext_conn.send_to_eval(tuple(self.state.cur_pos), self.state.cur_dance, self.state.sync_delay)
+                # Send movement data to dashboard
+                self.ext_conn.send_to_dashb(self.state.get_pos_results_json(), "action")
                 # Send dance data to dashboard
                 self.ext_conn.send_to_dashb(self.state.get_move_results_json(), "action")
 
@@ -254,20 +218,18 @@ class Main():
                 correct_pos = self.ext_conn.recv_pos()
                 if correct_pos != None:
                     self.state.cur_pos = f"{correct_pos[0]}{correct_pos[2]}{correct_pos[4]}"
+                else:
+                    # False start, in this case we continue and disregard everything so far
+                    pass
 
                 # Reset queues, filters, etc.
                 self.dancers[0].reset()
                 self.dancers[1].reset()
                 self.dancers[2].reset()
                 self.state.reset()
+                self.state.is_sync_delay_calc = False
 
                 self.state.end_timer.start()
-
-            # No concrete detections are ready yet.
-            # This could be because of disconnections or inaccuracies in the models
-            else:
-                pass
-
 
 
 if __name__ == "__main__":
